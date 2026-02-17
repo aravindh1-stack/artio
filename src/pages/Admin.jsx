@@ -35,7 +35,7 @@ const emptyCategory = {
   name: '',
   slug: '',
   description: '',
-  image_url: '',
+  image_path: '',
   display_order: 0,
 };
 
@@ -111,7 +111,7 @@ const Admin = () => {
   const loadCategories = async () => {
     const { data, error } = await supabase
       .from('categories')
-      .select('id, name, slug, description, image_url, display_order')
+      .select('id, name, slug, description, image_path, display_order')
       .order('display_order', { ascending: true });
 
     if (error) {
@@ -208,7 +208,7 @@ const Admin = () => {
         name: category.name,
         slug: category.slug,
         description: category.description ?? '',
-        image_url: category.image_url ?? '',
+        image_path: category.image_path ?? '',
         display_order: category.display_order ?? 0,
       });
     } else {
@@ -222,7 +222,7 @@ const Admin = () => {
       name: categoryForm.name,
       slug: categoryForm.slug || slugify(categoryForm.name),
       description: categoryForm.description,
-      image_url: categoryForm.image_url,
+      image_path: categoryForm.image_path,
       display_order: Number(categoryForm.display_order),
     };
 
