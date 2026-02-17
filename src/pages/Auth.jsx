@@ -7,6 +7,8 @@ import Input from '../components/ui/Input';
 import Card from '../components/ui/Card';
 import { supabase } from '../lib/supabase';
 import { useAuthStore } from '../store/authStore';
+import artioLightLogo from '../assets/artio-light-logo.png';
+import artioDarkLogo from '../assets/artio-dark-logo.png';
 
 const Auth = () => {
   const [isLogin, setIsLogin] = useState(true);

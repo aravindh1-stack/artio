@@ -1,4 +1,6 @@
 import { Link } from 'react-router-dom';
+import artioLightLogo from '../assets/artio-light-logo.png';
+import artioDarkLogo from '../assets/artio-dark-logo.png';
 
 const Footer = () => {
   // Import logo images
