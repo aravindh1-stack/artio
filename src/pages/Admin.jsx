@@ -3,6 +3,7 @@ import { supabase } from '../lib/supabase';
 import Card from '../components/ui/Card';
 import Button from '../components/ui/Button';
 import Input from '../components/ui/Input';
+import FileDropInput from '../components/ui/FileDropInput';
 import Modal from '../components/ui/Modal';
 
 const slugify = (value) => {
@@ -41,6 +42,7 @@ const emptyCategory = {
 };
 
 const Admin = () => {
+    const [productImageFile, setProductImageFile] = useState(null);
   const [activeTab, setActiveTab] = useState('orders');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -158,13 +160,24 @@ const Admin = () => {
   };
 
   const saveProduct = async () => {
+    let imagePath = productForm.image_path;
+    if (productImageFile) {
+      const fileExt = productImageFile.name.split('.').pop();
+      const fileName = `${slugify(productForm.name)}-${Date.now()}.${fileExt}`;
+      const { data, error: uploadError } = await supabase.storage.from('products').upload(fileName, productImageFile, { upsert: true });
+      if (uploadError) {
+        setError(uploadError.message);
+        return;
+      }
+      imagePath = data.path;
+    }
     const payload = {
       name: productForm.name,
       slug: productForm.slug || slugify(productForm.name),
       category_id: productForm.category_id || null,
       description: productForm.description,
       price: Number(productForm.price),
-      image_path: productForm.image_path,
+      image_path: imagePath,
       preview_image_url: productForm.preview_image_url,
       full_image_path: productForm.full_image_path,
       dimensions: productForm.dimensions,
@@ -576,10 +589,11 @@ const Admin = () => {
             value={productForm.dimensions}
             onChange={(e) => setProductForm((prev) => ({ ...prev, dimensions: e.target.value }))}
           />
-          <Input
-            label="Image Path"
-            value={productForm.image_path}
-            onChange={(e) => setProductForm((prev) => ({ ...prev, image_path: e.target.value }))}
+          <FileDropInput
+            label="Product Image"
+            accept="image/*"
+            value={productImageFile || productForm.image_path}
+            onFileChange={setProductImageFile}
           />
           <Input
             label="Preview Image URL"
