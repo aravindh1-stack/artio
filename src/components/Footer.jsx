@@ -16,7 +16,6 @@ const Footer = () => {
                 className="w-12 h-12 object-contain"
               />
             </span>
-            <h3 className="text-xl font-bold text-black dark:text-white">Artio</h3>
             <p className="mt-3 text-sm text-gray-600 dark:text-gray-400">
               Premium visual identities and museum-quality art prints.
             </p>

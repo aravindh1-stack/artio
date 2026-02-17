@@ -39,7 +39,6 @@ const Header = () => {
                 className="w-10 h-10 object-contain transition-all duration-200 group-hover:scale-105"
               />
             </span>
-            <span className="text-2xl font-bold text-black dark:text-white">Artio</span>
             <span className="text-sm text-gray-500 dark:text-gray-400 hidden sm:inline">Redefined</span>
           </Link>
           <div className="hidden md:flex items-center space-x-8">
