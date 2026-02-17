@@ -24,19 +24,24 @@ const Header = () => {
 
   const isActive = (path) => location.pathname === path;
 
+  // Import logo images
+  import artioLightLogo from '../assets/artio-light-logo.png';
+  import artioDarkLogo from '../assets/artio-dark-logo.png';
   return (
     <header className="fixed top-0 left-0 right-0 z-30 bg-white/80 dark:bg-black/80 backdrop-blur-md border-b border-gray-200 dark:border-gray-800">
       <nav className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
-          <Link to="/" className="flex items-center space-x-2">
-            <span className="text-2xl font-bold text-black dark:text-white">
-              Artio
+          <Link to="/" className="flex items-center space-x-2 group">
+            <span className="relative w-10 h-10 flex items-center">
+              <img
+                src={isDark ? artioDarkLogo : artioLightLogo}
+                alt="Artio Logo"
+                className="w-10 h-10 object-contain transition-all duration-200 group-hover:scale-105"
+              />
             </span>
-            <span className="text-sm text-gray-500 dark:text-gray-400 hidden sm:inline">
-              Redefined
-            </span>
+            <span className="text-2xl font-bold text-black dark:text-white">Artio</span>
+            <span className="text-sm text-gray-500 dark:text-gray-400 hidden sm:inline">Redefined</span>
           </Link>
-
           <div className="hidden md:flex items-center space-x-8">
             {navigation.map((item) => (
               <Link

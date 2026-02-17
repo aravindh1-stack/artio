@@ -106,6 +106,9 @@ const Auth = () => {
   };
 
   return (
+    // Import logo images
+    import artioLightLogo from '../assets/artio-light-logo.png';
+    import artioDarkLogo from '../assets/artio-dark-logo.png';
     <div className="min-h-screen pt-16 flex items-center justify-center bg-gradient-to-br from-gray-50 via-white to-gray-100 dark:from-gray-950 dark:via-black dark:to-gray-900">
       <div className="w-full max-w-md px-4 py-12">
         <motion.div
@@ -113,7 +116,14 @@ const Auth = () => {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
         >
-          <div className="text-center mb-8">
+          <div className="text-center mb-8 flex flex-col items-center">
+            <span className="relative w-16 h-16 mb-2">
+              <img
+                src={window.matchMedia('(prefers-color-scheme: dark)').matches ? artioDarkLogo : artioLightLogo}
+                alt="Artio Logo"
+                className="w-16 h-16 object-contain mx-auto"
+              />
+            </span>
             <h1 className="text-4xl font-bold mb-2">
               {isLogin ? 'Welcome Back' : 'Create Account'}
             </h1>

@@ -13,9 +13,10 @@ import Orders from './pages/Orders';
 import { useThemeStore } from './store/themeStore';
 import { useAuthStore } from './store/authStore';
 import AdminRoute from './components/AdminRoute';
+import Footer from './components/Footer';
 
 function App() {
-  const { isDark, setTheme } = useThemeStore();
+  const { setTheme } = useThemeStore();
   const initialize = useAuthStore((state) => state.initialize);
 
   useEffect(() => {
@@ -23,6 +24,8 @@ function App() {
     if (savedTheme) {
       const { state } = JSON.parse(savedTheme);
       setTheme(state.isDark);
+    } else {
+      setTheme(true);
     }
 
     initialize();
@@ -78,6 +81,7 @@ function App() {
             }
           />
         </Routes>
+        <Footer />
       </div>
     </Router>
   );
