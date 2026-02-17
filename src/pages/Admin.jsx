@@ -6,6 +6,7 @@ import Input from '../components/ui/Input';
 import Modal from '../components/ui/Modal';
 
 const slugify = (value) => {
+  if (!value) return '';
   return value
     .toLowerCase()
     .trim()
@@ -21,7 +22,7 @@ const emptyProduct = {
   category_id: '',
   description: '',
   price: '',
-  image_url: '',
+  image_path: '',
   preview_image_url: '',
   full_image_path: '',
   dimensions: '',
@@ -97,7 +98,7 @@ const Admin = () => {
   const loadProducts = async () => {
     const { data, error } = await supabase
       .from('products')
-      .select('id, name, slug, price, image_url, preview_image_url, full_image_path, category_id, is_active, is_featured, stock_quantity, dimensions, description, categories(name)')
+      .select('id, name, slug, price, image_path, preview_image_url, full_image_path, category_id, is_active, is_featured, stock_quantity, dimensions, description, categories(name)')
       .order('created_at', { ascending: false });
 
     if (error) {
@@ -142,7 +143,7 @@ const Admin = () => {
         category_id: product.category_id ?? '',
         description: product.description ?? '',
         price: product.price ?? '',
-        image_url: product.image_url ?? '',
+        image_path: product.image_path ?? '',
         preview_image_url: product.preview_image_url ?? '',
         full_image_path: product.full_image_path ?? '',
         dimensions: product.dimensions ?? '',
@@ -163,7 +164,7 @@ const Admin = () => {
       category_id: productForm.category_id || null,
       description: productForm.description,
       price: Number(productForm.price),
-      image_url: productForm.image_url,
+      image_path: productForm.image_path,
       preview_image_url: productForm.preview_image_url,
       full_image_path: productForm.full_image_path,
       dimensions: productForm.dimensions,
@@ -576,9 +577,9 @@ const Admin = () => {
             onChange={(e) => setProductForm((prev) => ({ ...prev, dimensions: e.target.value }))}
           />
           <Input
-            label="Image URL"
-            value={productForm.image_url}
-            onChange={(e) => setProductForm((prev) => ({ ...prev, image_url: e.target.value }))}
+            label="Image Path"
+            value={productForm.image_path}
+            onChange={(e) => setProductForm((prev) => ({ ...prev, image_path: e.target.value }))}
           />
           <Input
             label="Preview Image URL"
