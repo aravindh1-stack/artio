@@ -3,9 +3,7 @@ import artioLightLogo from '../assets/artio-light-logo.png';
 import artioDarkLogo from '../assets/artio-dark-logo.png';
 
 const Footer = () => {
-  // Import logo images
-  import artioLightLogo from '../assets/artio-light-logo.png';
-  import artioDarkLogo from '../assets/artio-dark-logo.png';
+  // ...existing code...
   return (
     <footer className="border-t border-gray-200 dark:border-gray-800 bg-white/80 dark:bg-black/80 backdrop-blur-md">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
