@@ -160,7 +160,7 @@ const Home = () => {
                     <Card className="group overflow-hidden">
                       <div className="relative h-64 overflow-hidden">
                         <img
-                          src={category.image_url}
+                          src={category.image_path}
                           alt={category.name}
                           className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
                         />
@@ -203,7 +203,7 @@ const Home = () => {
                   <Card className="group">
                     <div className="relative aspect-[3/4] overflow-hidden">
                       <img
-                        src={product.image_url}
+                        src={product.image_path}
                         alt={product.name}
                         className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
                       />

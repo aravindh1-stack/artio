@@ -525,7 +525,7 @@ const Cart = () => {
                   <div className="flex gap-6">
                     <div className="relative w-32 h-32 flex-shrink-0 rounded-lg overflow-hidden">
                       <img
-                        src={item.image_url}
+                        src={item.image_path}
                         alt={item.name}
                         className="w-full h-full object-cover"
                       />

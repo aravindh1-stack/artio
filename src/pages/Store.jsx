@@ -238,7 +238,7 @@ const Store = () => {
                   <Card className="group h-full flex flex-col">
                     <div className="relative aspect-[3/4] overflow-hidden artio-no-select">
                       <ProtectedImage
-                        src={product.preview_image_url || product.image_url}
+                        src={product.preview_image_url || product.image_path}
                         alt={product.name}
                         className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
                       />
@@ -298,7 +298,7 @@ const Store = () => {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
             <div className="relative aspect-[3/4] rounded-lg overflow-hidden artio-no-select">
               <ProtectedImage
-                src={quickViewProduct.preview_image_url || quickViewProduct.image_url}
+                src={quickViewProduct.preview_image_url || quickViewProduct.image_path}
                 alt={quickViewProduct.name}
                 className="w-full h-full object-cover"
               />
