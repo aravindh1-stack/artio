@@ -108,9 +108,7 @@ const Auth = () => {
   };
 
   return (
-    // Import logo images
-    import artioLightLogo from '../assets/artio-light-logo.png';
-    import artioDarkLogo from '../assets/artio-dark-logo.png';
+    // ...existing code...
     <div className="min-h-screen pt-16 flex items-center justify-center bg-gradient-to-br from-gray-50 via-white to-gray-100 dark:from-gray-950 dark:via-black dark:to-gray-900">
       <div className="w-full max-w-md px-4 py-12">
         <motion.div
