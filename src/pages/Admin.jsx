@@ -164,9 +164,14 @@ const Admin = () => {
     if (productImageFile) {
       const fileExt = productImageFile.name.split('.').pop();
       const fileName = `${slugify(productForm.name)}-${Date.now()}.${fileExt}`;
+      // Debug logs
+      console.log('Uploading to bucket:', 'products');
+      console.log('File:', productImageFile);
+      console.log('File name:', fileName);
       const { data, error: uploadError } = await supabase.storage.from('products').upload(fileName, productImageFile, { upsert: true });
+      console.log('Upload result:', data, uploadError);
       if (uploadError) {
-        setError(uploadError.message);
+        setError(uploadError.message + (uploadError.statusCode ? ` (Status: ${uploadError.statusCode})` : ''));
         return;
       }
       imagePath = data.path;
