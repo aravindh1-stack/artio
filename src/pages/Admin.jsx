@@ -9,18 +9,14 @@ async function addWatermarkToImage(file, watermarkText) {
       const ctx = canvas.getContext('2d');
       ctx.drawImage(img, 0, 0);
       // Watermark style
-      const fontSize = Math.floor(canvas.width / 8);
+      const fontSize = Math.floor(canvas.width / 12);
       ctx.font = `bold ${fontSize}px sans-serif`;
       ctx.globalAlpha = 0.18; // Light watermark
       ctx.fillStyle = '#222';
       ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-      // Diagonal watermark
-      ctx.save();
-      ctx.translate(canvas.width / 2, canvas.height / 2);
-      ctx.rotate(-Math.atan(canvas.height / canvas.width));
-      ctx.fillText(watermarkText, 0, 0);
-      ctx.restore();
+      ctx.textBaseline = 'top';
+      // Draw watermark at the top center
+      ctx.fillText(watermarkText, canvas.width / 2, fontSize * 0.2);
       ctx.globalAlpha = 1;
       canvas.toBlob((blob) => {
         if (!blob) return reject(new Error('Failed to create watermarked image'));
