@@ -17,62 +17,7 @@ const Store = () => {
   const [searchParams] = useSearchParams();
   const addItem = useCartStore((state) => state.addItem);
 
-  const ProtectedImage = ({ src, alt, className }) => {
-    const [objectUrl, setObjectUrl] = useState('');
 
-    useEffect(() => {
-      if (!src) {
-        setObjectUrl('');
-        return undefined;
-      }
-
-      const controller = new AbortController();
-      let active = true;
-
-      const loadImage = async () => {
-        try {
-          const response = await fetch(src, { signal: controller.signal });
-          if (!response.ok) {
-            throw new Error('Image fetch failed');
-          }
-          const blob = await response.blob();
-          const url = URL.createObjectURL(blob);
-          if (active) {
-            setObjectUrl((prev) => {
-              if (prev) URL.revokeObjectURL(prev);
-              return url;
-            });
-          } else {
-            URL.revokeObjectURL(url);
-          }
-        } catch {
-          if (active) {
-            setObjectUrl('');
-          }
-        }
-      };
-
-      loadImage();
-
-      return () => {
-        active = false;
-        controller.abort();
-        setObjectUrl((prev) => {
-          if (prev) URL.revokeObjectURL(prev);
-          return '';
-        });
-      };
-    }, [src]);
-
-    return (
-      <img
-        src={objectUrl || src}
-        alt={alt}
-        className={className}
-        draggable={false}
-      />
-    );
-  };
 
   useEffect(() => {
     fetchCategories();
@@ -237,10 +182,15 @@ const Store = () => {
                 <motion.div key={product.id} variants={itemVariants}>
                   <Card className="group h-full flex flex-col">
                     <div className="relative aspect-[3/4] overflow-hidden artio-no-select">
-                      <ProtectedImage
-                        src={product.preview_image_url || product.image_path}
+                      <img
+                        src={
+                          product.image_path
+                            ? `https://rjxssugbubunjkbqewob.supabase.co/storage/v1/object/public/products/${product.image_path}`
+                            : '/placeholder.png'
+                        }
                         alt={product.name}
                         className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+                        draggable={false}
                       />
                       <div className="absolute inset-0 artio-watermark pointer-events-none z-10" />
                       <div
@@ -297,10 +247,15 @@ const Store = () => {
         {quickViewProduct && (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
             <div className="relative aspect-[3/4] rounded-lg overflow-hidden artio-no-select">
-              <ProtectedImage
-                src={quickViewProduct.preview_image_url || quickViewProduct.image_path}
+              <img
+                src={
+                  quickViewProduct.image_path
+                    ? `https://rjxssugbubunjkbqewob.supabase.co/storage/v1/object/public/products/${quickViewProduct.image_path}`
+                    : '/placeholder.png'
+                }
                 alt={quickViewProduct.name}
                 className="w-full h-full object-cover"
+                draggable={false}
               />
               <div className="absolute inset-0 artio-watermark pointer-events-none z-10" />
               <div
