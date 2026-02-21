@@ -3,7 +3,7 @@ import { supabase } from '../lib/supabase';
 import Card from '../components/ui/Card';
 import Button from '../components/ui/Button';
 import Input from '../components/ui/Input';
-import FileDropInput from '../components/ui/FileDropInput';
+import DragDropImage from '../components/ui/DragDropImage';
 import Modal from '../components/ui/Modal';
 
 const slugify = (value) => {
@@ -42,7 +42,9 @@ const emptyCategory = {
 };
 
 const Admin = () => {
-    const [productImageFile, setProductImageFile] = useState(null);
+    const [productImageFiles, setProductImageFiles] = useState([]);
+    const [imagePreviews, setImagePreviews] = useState([]);
+    const [uploading, setUploading] = useState(false);
   const [activeTab, setActiveTab] = useState('orders');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -157,21 +159,22 @@ const Admin = () => {
       setProductForm(emptyProduct);
     }
     setProductModalOpen(true);
+    setProductImageFiles([]);
+    setImagePreviews([]);
   };
 
   const saveProduct = async () => {
     let imagePath = productForm.image_path;
-    if (productImageFile) {
-      const fileExt = productImageFile.name.split('.').pop();
+    setUploading(true);
+    if (productImageFiles.length > 0) {
+      // Only upload the first image for now (can be extended for batch)
+      const file = productImageFiles[0];
+      const fileExt = file.name.split('.').pop();
       const fileName = `${slugify(productForm.name)}-${Date.now()}.${fileExt}`;
-      // Debug logs
-      console.log('Uploading to bucket:', 'products');
-      console.log('File:', productImageFile);
-      console.log('File name:', fileName);
-      const { data, error: uploadError } = await supabase.storage.from('products').upload(fileName, productImageFile, { upsert: true });
-      console.log('Upload result:', data, uploadError);
+      const { data, error: uploadError } = await supabase.storage.from('products').upload(fileName, file, { upsert: true });
       if (uploadError) {
         setError(uploadError.message + (uploadError.statusCode ? ` (Status: ${uploadError.statusCode})` : ''));
+        setUploading(false);
         return;
       }
       imagePath = data.path;
@@ -190,16 +193,14 @@ const Admin = () => {
       is_featured: productForm.is_featured,
       is_active: productForm.is_active,
     };
-
     const { error } = productForm.id
       ? await supabase.from('products').update(payload).eq('id', productForm.id)
       : await supabase.from('products').insert(payload);
-
+    setUploading(false);
     if (error) {
       setError(error.message);
       return;
     }
-
     setProductModalOpen(false);
     await loadProducts();
   };
@@ -594,12 +595,18 @@ const Admin = () => {
             value={productForm.dimensions}
             onChange={(e) => setProductForm((prev) => ({ ...prev, dimensions: e.target.value }))}
           />
-          <FileDropInput
-            label="Product Image"
-            accept="image/*"
-            value={productImageFile || productForm.image_path}
-            onFileChange={setProductImageFile}
-          />
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Product Image</label>
+            <DragDropImage
+              onDrop={(acceptedFiles) => {
+                setProductImageFiles(acceptedFiles);
+                setImagePreviews(acceptedFiles.map(f => URL.createObjectURL(f)));
+              }}
+              files={productImageFiles}
+              previewUrls={imagePreviews}
+              uploading={uploading}
+            />
+          </div>
           <Input
             label="Preview Image URL"
             value={productForm.preview_image_url}
