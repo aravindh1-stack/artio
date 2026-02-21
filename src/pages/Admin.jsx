@@ -765,7 +765,9 @@ const Admin = () => {
           </div>
         </div>
         <div className="mt-6 flex items-center gap-3">
-          <Button onClick={saveCategory}>Save Category</Button>
+          <Button onClick={saveCategory} disabled={!categoryForm.image_path || uploading}>
+            {uploading ? 'Uploading...' : 'Save Category'}
+          </Button>
           <Button variant="outline" onClick={() => setCategoryModalOpen(false)}>
             Cancel
           </Button>
