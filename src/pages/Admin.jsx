@@ -195,43 +195,45 @@ const Admin = () => {
   const saveProduct = async () => {
     let imagePath = productForm.image_path;
     setUploading(true);
-    if (productImageFiles.length > 0) {
-      // Only upload the first image for now (can be extended for batch)
-      const file = productImageFiles[0];
-      const fileExt = file.name.split('.').pop();
-      const fileName = `${slugify(productForm.name)}-${Date.now()}.${fileExt}`;
-      const { data, error: uploadError } = await supabase.storage.from('products').upload(fileName, file, { upsert: true });
-      if (uploadError) {
-        setError(uploadError.message + (uploadError.statusCode ? ` (Status: ${uploadError.statusCode})` : ''));
-        setUploading(false);
+    try {
+      if (productImageFiles.length > 0) {
+        // Only upload the first image for now (can be extended for batch)
+        const file = productImageFiles[0];
+        const fileExt = file.name.split('.').pop();
+        const fileName = `${slugify(productForm.name)}-${Date.now()}.${fileExt}`;
+        const { data, error: uploadError } = await supabase.storage.from('products').upload(fileName, file, { upsert: true });
+        if (uploadError) {
+          setError(uploadError.message + (uploadError.statusCode ? ` (Status: ${uploadError.statusCode})` : ''));
+          return;
+        }
+        imagePath = data.path;
+      }
+      const payload = {
+        name: productForm.name,
+        slug: productForm.slug || slugify(productForm.name),
+        category_id: productForm.category_id || null,
+        description: productForm.description,
+        price: Number(productForm.price),
+        image_path: imagePath,
+        preview_image_url: productForm.preview_image_url,
+        full_image_path: productForm.full_image_path,
+        dimensions: productForm.dimensions,
+        stock_quantity: Number(productForm.stock_quantity),
+        is_featured: productForm.is_featured,
+        is_active: productForm.is_active,
+      };
+      const { error } = productForm.id
+        ? await supabase.from('products').update(payload).eq('id', productForm.id)
+        : await supabase.from('products').insert(payload);
+      if (error) {
+        setError(error.message);
         return;
       }
-      imagePath = data.path;
+      setProductModalOpen(false);
+      await loadProducts();
+    } finally {
+      setUploading(false);
     }
-    const payload = {
-      name: productForm.name,
-      slug: productForm.slug || slugify(productForm.name),
-      category_id: productForm.category_id || null,
-      description: productForm.description,
-      price: Number(productForm.price),
-      image_path: imagePath,
-      preview_image_url: productForm.preview_image_url,
-      full_image_path: productForm.full_image_path,
-      dimensions: productForm.dimensions,
-      stock_quantity: Number(productForm.stock_quantity),
-      is_featured: productForm.is_featured,
-      is_active: productForm.is_active,
-    };
-    const { error } = productForm.id
-      ? await supabase.from('products').update(payload).eq('id', productForm.id)
-      : await supabase.from('products').insert(payload);
-    setUploading(false);
-    if (error) {
-      setError(error.message);
-      return;
-    }
-    setProductModalOpen(false);
-    await loadProducts();
   };
 
   const deleteProduct = async (productId) => {
