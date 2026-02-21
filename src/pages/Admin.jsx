@@ -691,7 +691,10 @@ const Admin = () => {
           </label>
         </div>
         <div className="mt-6 flex items-center gap-3">
-          <Button onClick={saveProduct} disabled={!productForm.image_path || uploading}>
+          <Button
+            onClick={saveProduct}
+            disabled={(!productForm.image_path && !productForm.id) || uploading}
+          >
             {uploading ? 'Uploading...' : 'Save Product'}
           </Button>
           <Button variant="outline" onClick={() => setProductModalOpen(false)}>
