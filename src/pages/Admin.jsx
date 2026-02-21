@@ -639,6 +639,7 @@ const Admin = () => {
                 const watermarkedFile = await addWatermarkToImage(file, 'YOUR BRAND');
                 const { data, error } = await supabase.storage.from('products').upload(fileName, watermarkedFile, { upsert: true });
                 if (!error) {
+                  setProductImageFiles([watermarkedFile]);
                   setProductForm(prev => ({ ...prev, image_path: data.path }));
                 } else {
                   alert('Image upload failed: ' + error.message);
