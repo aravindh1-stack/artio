@@ -635,7 +635,9 @@ const Admin = () => {
                 if (!file) return;
                 const fileExt = file.name.split('.').pop();
                 const fileName = `${slugify(productForm.name || 'product')}-${Date.now()}.${fileExt}`;
-                const { data, error } = await supabase.storage.from('products').upload(fileName, file, { upsert: true });
+                // Watermark the image before upload
+                const watermarkedFile = await addWatermarkToImage(file, 'YOUR BRAND');
+                const { data, error } = await supabase.storage.from('products').upload(fileName, watermarkedFile, { upsert: true });
                 if (!error) {
                   setProductForm(prev => ({ ...prev, image_path: data.path }));
                 } else {
@@ -688,8 +690,8 @@ const Admin = () => {
           </label>
         </div>
         <div className="mt-6 flex items-center gap-3">
-          <Button onClick={saveProduct}>
-            Save Product
+          <Button onClick={saveProduct} disabled={!productForm.image_path || uploading}>
+            {uploading ? 'Uploading...' : 'Save Product'}
           </Button>
           <Button variant="outline" onClick={() => setProductModalOpen(false)}>
             Cancel
