@@ -615,15 +615,7 @@ const Admin = () => {
               }}
             />
             {productForm.image_path && (
-              <div className="flex flex-col items-center mt-2">
-                <img
-                  src={`https://${supabase.supabaseUrl.replace('https://', '')}/storage/v1/object/public/products/${productForm.image_path}`}
-                  alt="Preview"
-                  className="w-32 h-32 object-cover rounded-lg border shadow"
-                  style={{ aspectRatio: '1/1' }}
-                />
-                <span className="text-xs text-gray-500 mt-1 break-all">{productForm.image_path}</span>
-              </div>
+              <span className="text-xs text-gray-500 mt-1 break-all">{productForm.image_path}</span>
             )}
           </div>
           <Input
