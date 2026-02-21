@@ -596,16 +596,20 @@ const Admin = () => {
             onChange={(e) => setProductForm((prev) => ({ ...prev, dimensions: e.target.value }))}
           />
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Product Image</label>
-            <DragDropImage
-              onDrop={(acceptedFiles) => {
-                setProductImageFiles(acceptedFiles);
-                setImagePreviews(acceptedFiles.map(f => URL.createObjectURL(f)));
-              }}
-              files={productImageFiles}
-              previewUrls={imagePreviews}
-              uploading={uploading}
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Product Image URL (Canva or direct link)</label>
+            <Input
+              placeholder="https://..."
+              value={productForm.image_path}
+              onChange={e => setProductForm(prev => ({ ...prev, image_path: e.target.value }))}
             />
+            {productForm.image_path && (
+              <img
+                src={productForm.image_path}
+                alt="Preview"
+                className="w-32 h-32 object-cover rounded-lg mt-2 border"
+                style={{ aspectRatio: '1/1' }}
+              />
+            )}
           </div>
           <Input
             label="Preview Image URL"
