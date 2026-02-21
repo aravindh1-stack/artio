@@ -595,20 +595,35 @@ const Admin = () => {
             value={productForm.dimensions}
             onChange={(e) => setProductForm((prev) => ({ ...prev, dimensions: e.target.value }))}
           />
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Product Image URL (Canva or direct link)</label>
-            <Input
-              placeholder="https://..."
-              value={productForm.image_path}
-              onChange={e => setProductForm(prev => ({ ...prev, image_path: e.target.value }))}
+          <div className="flex flex-col gap-2">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Product Image</label>
+            <input
+              type="file"
+              accept="image/*"
+              className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-primary/10 file:text-primary hover:file:bg-primary/20"
+              onChange={async (e) => {
+                const file = e.target.files[0];
+                if (!file) return;
+                const fileExt = file.name.split('.').pop();
+                const fileName = `${slugify(productForm.name || 'product')}-${Date.now()}.${fileExt}`;
+                const { data, error } = await supabase.storage.from('products').upload(fileName, file, { upsert: true });
+                if (!error) {
+                  setProductForm(prev => ({ ...prev, image_path: data.path }));
+                } else {
+                  alert('Image upload failed: ' + error.message);
+                }
+              }}
             />
             {productForm.image_path && (
-              <img
-                src={productForm.image_path}
-                alt="Preview"
-                className="w-32 h-32 object-cover rounded-lg mt-2 border"
-                style={{ aspectRatio: '1/1' }}
-              />
+              <div className="flex flex-col items-center mt-2">
+                <img
+                  src={`https://${supabase.supabaseUrl.replace('https://', '')}/storage/v1/object/public/products/${productForm.image_path}`}
+                  alt="Preview"
+                  className="w-32 h-32 object-cover rounded-lg border shadow"
+                  style={{ aspectRatio: '1/1' }}
+                />
+                <span className="text-xs text-gray-500 mt-1 break-all">{productForm.image_path}</span>
+              </div>
             )}
           </div>
           <Input
