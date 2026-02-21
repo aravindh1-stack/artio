@@ -1,3 +1,36 @@
+// Utility: Add watermark to image file (returns a new File)
+async function addWatermarkToImage(file, watermarkText) {
+  return new Promise((resolve, reject) => {
+    const img = new window.Image();
+    img.onload = () => {
+      const canvas = document.createElement('canvas');
+      canvas.width = img.width;
+      canvas.height = img.height;
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(img, 0, 0);
+      // Watermark style
+      const fontSize = Math.floor(canvas.width / 8);
+      ctx.font = `bold ${fontSize}px sans-serif`;
+      ctx.globalAlpha = 0.18; // Light watermark
+      ctx.fillStyle = '#222';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      // Diagonal watermark
+      ctx.save();
+      ctx.translate(canvas.width / 2, canvas.height / 2);
+      ctx.rotate(-Math.atan(canvas.height / canvas.width));
+      ctx.fillText(watermarkText, 0, 0);
+      ctx.restore();
+      ctx.globalAlpha = 1;
+      canvas.toBlob((blob) => {
+        if (!blob) return reject(new Error('Failed to create watermarked image'));
+        resolve(new File([blob], file.name, { type: file.type }));
+      }, file.type);
+    };
+    img.onerror = reject;
+    img.src = URL.createObjectURL(file);
+  });
+}
 import { useEffect, useState } from 'react';
 import { supabase } from '../lib/supabase';
 import Card from '../components/ui/Card';
@@ -686,11 +719,32 @@ const Admin = () => {
             value={categoryForm.slug}
             onChange={(e) => setCategoryForm((prev) => ({ ...prev, slug: e.target.value }))}
           />
-          <Input
-            label="Image URL"
-            value={categoryForm.image_url}
-            onChange={(e) => setCategoryForm((prev) => ({ ...prev, image_url: e.target.value }))}
-          />
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Category Image</label>
+            <input
+              type="file"
+              accept="image/*"
+              className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-primary/10 file:text-primary hover:file:bg-primary/20"
+              onChange={async (e) => {
+                const file = e.target.files[0];
+                if (!file) return;
+                // Watermark logic will be added here
+                const fileExt = file.name.split('.').pop();
+                const fileName = `${slugify(categoryForm.name || 'category')}-${Date.now()}.${fileExt}`;
+                // Watermark the image before upload
+                const watermarkedFile = await addWatermarkToImage(file, 'YOUR BRAND');
+                const { data, error } = await supabase.storage.from('categories').upload(fileName, watermarkedFile, { upsert: true });
+                if (!error) {
+                  setCategoryForm(prev => ({ ...prev, image_path: data.path }));
+                } else {
+                  alert('Image upload failed: ' + error.message);
+                }
+              }}
+            />
+            {categoryForm.image_path && (
+              <span className="text-xs text-gray-500 mt-1 break-all">{categoryForm.image_path}</span>
+            )}
+          </div>
           <Input
             label="Display Order"
             type="number"
