@@ -150,12 +150,19 @@ const Store = () => {
               <button
                 key={category.id}
                 onClick={() => setSelectedCategoryId(category.id)}
-                className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
                   selectedCategoryId === category.id
                     ? 'bg-black dark:bg-white text-white dark:text-black'
                     : 'bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-gray-100 hover:bg-gray-200 dark:hover:bg-gray-700'
                 }`}
               >
+                {category.image_path && (
+                  <img
+                    src={`https://rjxssugbubunjkbqewob.supabase.co/storage/v1/object/public/categories/${category.image_path}`}
+                    alt={category.name}
+                    className="w-6 h-6 object-cover rounded-full border border-gray-300 dark:border-gray-700"
+                  />
+                )}
                 {category.name}
               </button>
             ))}
