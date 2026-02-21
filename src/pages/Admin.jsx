@@ -633,6 +633,7 @@ const Admin = () => {
               onChange={async (e) => {
                 const file = e.target.files[0];
                 if (!file) return;
+                setUploading(true);
                 const fileExt = file.name.split('.').pop();
                 const fileName = `${slugify(productForm.name || 'product')}-${Date.now()}.${fileExt}`;
                 // Watermark the image before upload
@@ -644,9 +645,13 @@ const Admin = () => {
                 } else {
                   alert('Image upload failed: ' + error.message);
                 }
+                setUploading(false);
               }}
             />
-            {productForm.image_path && (
+            {uploading && (
+              <span className="text-xs text-primary mt-1">Uploading image...</span>
+            )}
+            {productForm.image_path && !uploading && (
               <span className="text-xs text-gray-500 mt-1 break-all">{productForm.image_path}</span>
             )}
           </div>
