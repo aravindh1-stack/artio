@@ -748,8 +748,16 @@ const Admin = () => {
               <h3 className="font-semibold mb-2">Items</h3>
               <div className="space-y-2">
                 {(selectedOrder.order_items || []).map((item) => (
-                  <div key={item.id} className="text-sm text-gray-600 dark:text-gray-400">
-                    {item.products?.name || 'Product'} · {item.quantity} × ${item.price_at_purchase}
+                  <div key={item.id} className="flex items-center gap-3 text-sm text-gray-600 dark:text-gray-400">
+                    {item.products?.image_path && (
+                      <img
+                        src={`https://rjxssugbubunjkbqewob.supabase.co/storage/v1/object/public/products/${item.products.image_path}`}
+                        alt={item.products?.name || 'Product'}
+                        className="w-12 h-12 object-cover rounded border"
+                        style={{ aspectRatio: '1/1' }}
+                      />
+                    )}
+                    <span>{item.products?.name || 'Product'} · {item.quantity} × ${item.price_at_purchase}</span>
                   </div>
                 ))}
               </div>
