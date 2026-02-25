@@ -39,11 +39,10 @@ const slugify = (value) => {
   if (!value) return '';
   return value
     .toLowerCase()
-    .trim()
+    // import { pool } from '../lib/db';
     .replace(/[^a-z0-9\s-]/g, '')
-    .replace(/\s+/g, '-')
-    .replace(/-+/g, '-');
-};
+    .replace(/\s+/g, '-');
+}
 
 const emptyProduct = {
   id: '',
@@ -81,7 +80,7 @@ const Admin = () => {
   const [orders, setOrders] = useState([]);
   const [selectedOrder, setSelectedOrder] = useState(null);
 
-  const [users, setUsers] = useState([]);
+              // const { data, error: uploadError } = await supabase.storage.from('products').upload(fileName, file, { upsert: true });
   const [selectedUser, setSelectedUser] = useState(null);
   const [userAddresses, setUserAddresses] = useState([]);
 
@@ -101,59 +100,23 @@ const Admin = () => {
   ];
 
   const loadOrders = async () => {
-    const { data, error } = await supabase
-      .from('orders')
-      .select('id, user_id, status, payment_status, total_amount, created_at, shipping_address, order_items(id, quantity, price_at_purchase, products(name))')
-      .order('created_at', { ascending: false });
-
-    if (error) {
-      setError(error.message);
-      return;
-    }
-
-    setOrders(data || []);
+    // TODO: Replace with Neon/pg query
+    setOrders([]); // Placeholder
   };
 
   const loadUsers = async () => {
-    const { data, error } = await supabase
-      .from('profiles')
-      .select('id, email, full_name, phone, role, created_at')
-      .order('created_at', { ascending: false });
-
-    if (error) {
-      setError(error.message);
-      return;
-    }
-
-    setUsers(data || []);
+    // TODO: Replace with Neon/pg query
+    setUsers([]); // Placeholder
   };
 
   const loadProducts = async () => {
-    const { data, error } = await supabase
-      .from('products')
-      .select('id, name, slug, price, image_path, preview_image_url, full_image_path, category_id, is_active, is_featured, stock_quantity, dimensions, description, categories(name)')
-      .order('created_at', { ascending: false });
-
-    if (error) {
-      setError(error.message);
-      return;
-    }
-
-    setProducts(data || []);
+    // TODO: Replace with Neon/pg query
+    setProducts([]); // Placeholder
   };
 
   const loadCategories = async () => {
-    const { data, error } = await supabase
-      .from('categories')
-      .select('id, name, slug, description, image_path, display_order')
-      .order('display_order', { ascending: true });
-
-    if (error) {
-      setError(error.message);
-      return;
-    }
-
-    setCategories(data || []);
+    // TODO: Replace with Neon/pg query
+    setCategories([]); // Placeholder
   };
 
   const refreshAll = async () => {
@@ -193,63 +156,20 @@ const Admin = () => {
   };
 
   const saveProduct = async () => {
-    let imagePath = productForm.image_path;
+    // TODO: Implement Neon/pg logic for saving product and uploading image
     setUploading(true);
-    try {
-      if (productImageFiles.length > 0) {
-        // Only upload the first image for now (can be extended for batch)
-        const file = productImageFiles[0];
-        const fileExt = file.name.split('.').pop();
-        const fileName = `${slugify(productForm.name)}-${Date.now()}.${fileExt}`;
-        const { data, error: uploadError } = await supabase.storage.from('products').upload(fileName, file, { upsert: true });
-        if (uploadError) {
-          setError(uploadError.message + (uploadError.statusCode ? ` (Status: ${uploadError.statusCode})` : ''));
-          return;
-        }
-        imagePath = data.path;
-      }
-      const payload = {
-        name: productForm.name,
-        slug: productForm.slug || slugify(productForm.name),
-        category_id: productForm.category_id || null,
-        description: productForm.description,
-        price: Number(productForm.price),
-        image_path: imagePath,
-        preview_image_url: productForm.preview_image_url,
-        full_image_path: productForm.full_image_path,
-        dimensions: productForm.dimensions,
-        stock_quantity: Number(productForm.stock_quantity),
-        is_featured: productForm.is_featured,
-        is_active: productForm.is_active,
-      };
-      const { error } = productForm.id
-        ? await supabase.from('products').update(payload).eq('id', productForm.id)
-        : await supabase.from('products').insert(payload);
-      if (error) {
-        setError(error.message);
-        return;
-      }
+    // Placeholder: simulate upload
+    setTimeout(() => {
       setProductModalOpen(false);
-      await loadProducts();
-    } finally {
       setUploading(false);
-    }
+      loadProducts();
+    }, 1000);
   };
 
   const deleteProduct = async (productId) => {
     if (!window.confirm('Delete this product?')) return;
-
-    const { error } = await supabase
-      .from('products')
-      .delete()
-      .eq('id', productId);
-
-    if (error) {
-      setError(error.message);
-      return;
-    }
-
-    await loadProducts();
+    // TODO: Implement Neon/pg logic for deleting product
+    loadProducts();
   };
 
   const openCategoryModal = (category) => {
@@ -269,89 +189,35 @@ const Admin = () => {
   };
 
   const saveCategory = async () => {
-    const payload = {
-      name: categoryForm.name,
-      slug: categoryForm.slug || slugify(categoryForm.name),
-      description: categoryForm.description,
-      image_path: categoryForm.image_path,
-      display_order: Number(categoryForm.display_order),
-    };
-
-    const { error } = categoryForm.id
-      ? await supabase.from('categories').update(payload).eq('id', categoryForm.id)
-      : await supabase.from('categories').insert(payload);
-
-    if (error) {
-      setError(error.message);
-      return;
-    }
-
+    // TODO: Implement Neon/pg logic for saving category
     setCategoryModalOpen(false);
-    await loadCategories();
+    loadCategories();
   };
 
   const deleteCategory = async (categoryId) => {
     if (!window.confirm('Delete this category?')) return;
-
-    const { error } = await supabase
-      .from('categories')
-      .delete()
-      .eq('id', categoryId);
-
-    if (error) {
-      setError(error.message);
-      return;
-    }
-
-    await loadCategories();
+    // TODO: Implement Neon/pg logic for deleting category
+    loadCategories();
   };
 
   const loadUserAddresses = async (userId) => {
-    const { data, error } = await supabase
-      .from('addresses')
-      .select('id, full_name, phone, address_line1, address_line2, city, state, postal_code, country, is_default')
-      .eq('user_id', userId)
-      .order('created_at', { ascending: true });
-
-    if (error) {
-      setError(error.message);
-      return;
-    }
-
-    setUserAddresses(data || []);
+    // TODO: Implement Neon/pg logic for loading user addresses
+    setUserAddresses([]); // Placeholder
   };
 
   const openUserModal = async (user) => {
     setSelectedUser(user);
-    await loadUserAddresses(user.id);
+    loadUserAddresses(user.id);
   };
 
   const updateUserRole = async (userId, nextRole) => {
-    const { error } = await supabase
-      .from('profiles')
-      .update({ role: nextRole })
-      .eq('id', userId);
-
-    if (error) {
-      setError(error.message);
-      return;
-    }
-
-    await loadUsers();
+    // TODO: Implement Neon/pg logic for updating user role
+    loadUsers();
   };
 
   const updateOrder = async (orderId, payload) => {
-    const { error } = await supabase
-      .from('orders')
-      .update(payload)
-      .eq('id', orderId);
-
-    if (error) {
-      setError(error.message);
-      return;
-    }
-
-    await loadOrders();
+    // TODO: Implement Neon/pg logic for updating order
+    loadOrders();
   };
 
   return (
@@ -636,18 +502,12 @@ const Admin = () => {
                 const file = e.target.files[0];
                 if (!file) return;
                 setUploading(true);
-                const fileExt = file.name.split('.').pop();
-                const fileName = `${slugify(productForm.name || 'product')}-${Date.now()}.${fileExt}`;
-                // Watermark the image before upload
-                const watermarkedFile = await addWatermarkToImage(file, 'YOUR BRAND');
-                const { data, error } = await supabase.storage.from('products').upload(fileName, watermarkedFile, { upsert: true });
-                if (!error) {
-                  setProductImageFiles([watermarkedFile]);
-                  setProductForm(prev => ({ ...prev, image_path: data.path }));
-                } else {
-                  alert('Image upload failed: ' + error.message);
-                }
-                setUploading(false);
+                // TODO: Implement Neon/pg logic for image upload
+                setTimeout(() => {
+                  setProductImageFiles([file]);
+                  setProductForm(prev => ({ ...prev, image_path: file.name }));
+                  setUploading(false);
+                }, 1000);
               }}
             />
             {uploading && (
@@ -737,17 +597,8 @@ const Admin = () => {
               onChange={async (e) => {
                 const file = e.target.files[0];
                 if (!file) return;
-                // Watermark logic will be added here
-                const fileExt = file.name.split('.').pop();
-                const fileName = `${slugify(categoryForm.name || 'category')}-${Date.now()}.${fileExt}`;
-                // Watermark the image before upload
-                const watermarkedFile = await addWatermarkToImage(file, 'YOUR BRAND');
-                const { data, error } = await supabase.storage.from('categories').upload(fileName, watermarkedFile, { upsert: true });
-                if (!error) {
-                  setCategoryForm(prev => ({ ...prev, image_path: data.path }));
-                } else {
-                  alert('Image upload failed: ' + error.message);
-                }
+                // TODO: Implement Neon/pg logic for image upload
+                setCategoryForm(prev => ({ ...prev, image_path: file.name }));
               }}
             />
             {categoryForm.image_path && (
@@ -870,6 +721,6 @@ const Admin = () => {
       </Modal>
     </div>
   );
-};
+}
 
 export default Admin;

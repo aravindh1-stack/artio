@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { supabase } from '../lib/supabase';
+
 
 export const useAuthStore = create((set, get) => ({
   user: null,
@@ -18,35 +18,20 @@ export const useAuthStore = create((set, get) => ({
       set({ profile: null, role: 'user' });
       return;
     }
-
-    const { data } = await supabase
-      .from('profiles')
-      .select('id, email, full_name, phone, role')
-      .eq('id', user.id)
-      .single();
-
-    set({ profile: data ?? null, role: data?.role ?? 'user' });
+    // TODO: Replace with Neon/pg query
+    set({ profile: { id: user.id, email: user.email, full_name: '', phone: '', role: 'user' }, role: 'user' });
   },
 
   initialize: async () => {
     set({ loading: true });
-    const { data: { session } } = await supabase.auth.getSession();
-    const user = session?.user ?? null;
-    set({ session, user });
-    await get().fetchProfile(user);
+    // TODO: Replace with Neon/pg auth logic
+    set({ session: null, user: null });
+    await get().fetchProfile(null);
     set({ loading: false });
-
-    supabase.auth.onAuthStateChange((_event, session) => {
-      (async () => {
-        const nextUser = session?.user ?? null;
-        set({ session, user: nextUser });
-        await get().fetchProfile(nextUser);
-      })();
-    });
   },
 
   signOut: async () => {
-    await supabase.auth.signOut();
+    // TODO: Replace with Neon/pg sign out logic
     set({ user: null, session: null, profile: null, role: 'user' });
   },
 }));

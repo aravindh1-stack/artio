@@ -4,7 +4,7 @@ import { motion } from 'framer-motion';
 import { ArrowRight, Sparkles, Award, TrendingUp } from 'lucide-react';
 import Button from '../components/ui/Button';
 import Card from '../components/ui/Card';
-import { supabase } from '../lib/supabase';
+
 import { useCartStore } from '../store/cartStore';
 
 const Home = () => {
@@ -18,28 +18,13 @@ const Home = () => {
   }, []);
 
   const fetchFeaturedProducts = async () => {
-    const { data, error } = await supabase
-      .from('products')
-      .select('*')
-      .eq('is_featured', true)
-      .eq('is_active', true)
-      .limit(4);
-
-    if (!error && data) {
-      setFeaturedProducts(data);
-    }
+    // TODO: Replace with Neon/pg query
+    setFeaturedProducts([]); // Placeholder
   };
 
   const fetchCategories = async () => {
-    const { data, error } = await supabase
-      .from('categories')
-      .select('*')
-      .order('display_order', { ascending: true })
-      .limit(6);
-
-    if (!error && data) {
-      setCategories(data);
-    }
+    // TODO: Replace with Neon/pg query
+    setCategories([]); // Placeholder
   };
 
   const containerVariants = {

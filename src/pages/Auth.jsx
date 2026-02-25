@@ -5,7 +5,7 @@ import { Mail, Lock, User as UserIcon } from 'lucide-react';
 import Button from '../components/ui/Button';
 import Input from '../components/ui/Input';
 import Card from '../components/ui/Card';
-import { supabase } from '../lib/supabase';
+
 import { useAuthStore } from '../store/authStore';
 import artioLightLogo from '../assets/artio-light-logo.png';
 import artioDarkLogo from '../assets/artio-dark-logo.png';
@@ -40,18 +40,10 @@ const Auth = () => {
 
     try {
       if (isLogin) {
-        const { data, error } = await supabase.auth.signInWithPassword({
-          email: formData.email,
-          password: formData.password,
-        });
-
-        if (error) throw error;
-
-        if (data.user) {
-          setUser(data.user);
-          setSession(data.session);
-          navigate('/');
-        }
+        // TODO: Replace with Neon/pg login logic
+        setUser({ email: formData.email });
+        setSession({});
+        navigate('/');
       } else {
         if (!formData.fullName.trim()) {
           throw new Error('Full name is required');
