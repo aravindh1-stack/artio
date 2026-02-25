@@ -7,7 +7,6 @@ import Card from '../components/ui/Card';
 import Input from '../components/ui/Input';
 import { useCartStore } from '../store/cartStore';
 import { useAuthStore } from '../store/authStore';
-import { supabase } from '../lib/supabase';
 
 const Cart = () => {
   const { items, removeItem, updateQuantity, getTotal, clearCart } = useCartStore();
@@ -64,28 +63,12 @@ const Cart = () => {
   });
 
   const loadAddresses = async (userId) => {
-    const { data, error } = await supabase
-      .from('addresses')
-      .select('*')
-      .eq('user_id', userId)
-      .order('created_at', { ascending: true });
-
-    if (error) {
-      setAddressActionError(error.message);
-      return;
-    }
-
-    const mapped = (data || []).map(mapAddress);
-    setAddresses(mapped);
-
-    const defaultAddress = mapped.find((address) => address.isDefault);
-    if (defaultAddress) {
-      setSelectedAddressId(defaultAddress.id);
-    } else if (mapped.length > 0) {
-      setSelectedAddressId(mapped[0].id);
-    }
-
-    if (mapped.length === 0) {
+    // TODO: Replace with Neon fetch
+    // Placeholder: fetch('/api/addresses?userId=' + userId)
+    const mockAddresses = [];
+    setAddresses(mockAddresses);
+    setSelectedAddressId(mockAddresses[0]?.id || '');
+    if (mockAddresses.length === 0) {
       setShowAddressForm(true);
       setSetDefaultOnSave(true);
     }
@@ -95,19 +78,9 @@ const Cart = () => {
     const fetchProfile = async () => {
       if (!user) return;
 
-      const { data } = await supabase
-        .from('profiles')
-        .select('full_name, phone')
-        .eq('id', user.id)
-        .single();
-
-      if (data) {
-        setProfileData({
-          fullName: data.full_name || '',
-          phone: data.phone || '',
-        });
-      }
-
+      // TODO: Replace with Neon fetch
+      // Placeholder: fetch('/api/profile?userId=' + user.id)
+      setProfileData({ fullName: 'John Doe', phone: '1234567890' });
       await loadAddresses(user.id);
     };
 
@@ -176,57 +149,11 @@ const Cart = () => {
     setIsSavingAddress(true);
 
     try {
-      if (setDefaultOnSave) {
-        const { error: resetError } = await supabase
-          .from('addresses')
-          .update({ is_default: false })
-          .eq('user_id', user.id);
-
-        if (resetError) throw resetError;
-      }
-
-      const payload = {
-        user_id: user.id,
-        full_name: addressForm.fullName,
-        phone: addressForm.phone,
-        address_line1: addressForm.line1,
-        address_line2: addressForm.line2,
-        city: addressForm.city,
-        state: addressForm.state,
-        postal_code: addressForm.postalCode,
-        country: addressForm.country,
-        is_default: setDefaultOnSave,
-        updated_at: new Date().toISOString(),
-      };
-
-      const { data, error } = editingAddressId
-        ? await supabase
-            .from('addresses')
-            .update(payload)
-            .eq('id', editingAddressId)
-            .select('id')
-            .single()
-        : await supabase
-            .from('addresses')
-            .insert(payload)
-            .select('id')
-            .single();
-
-      if (error) throw error;
-
-      await supabase
-        .from('profiles')
-        .upsert({
-          id: user.id,
-          email: user.email,
-          full_name: addressForm.fullName,
-          phone: addressForm.phone,
-          updated_at: new Date().toISOString(),
-        });
-
+      // TODO: Replace with Neon fetch
+      // Placeholder: fetch('/api/address/save', { ...addressForm })
       setShowAddressForm(false);
       setEditingAddressId('');
-      setSelectedAddressId(data.id);
+      setSelectedAddressId('mockId');
       await loadAddresses(user.id);
     } catch (err) {
       setAddressActionError(err.message || 'Unable to save address.');
@@ -239,20 +166,8 @@ const Cart = () => {
     setAddressActionError('');
 
     try {
-      const { error: resetError } = await supabase
-        .from('addresses')
-        .update({ is_default: false })
-        .eq('user_id', user.id);
-
-      if (resetError) throw resetError;
-
-      const { error: setError } = await supabase
-        .from('addresses')
-        .update({ is_default: true })
-        .eq('id', addressId);
-
-      if (setError) throw setError;
-
+      // TODO: Replace with Neon fetch
+      // Placeholder: fetch('/api/address/set-default', { addressId })
       setSelectedAddressId(addressId);
       await loadAddresses(user.id);
     } catch (err) {
@@ -264,17 +179,11 @@ const Cart = () => {
     setAddressActionError('');
 
     try {
-      const { error } = await supabase
-        .from('addresses')
-        .delete()
-        .eq('id', addressId);
-
-      if (error) throw error;
-
+      // TODO: Replace with Neon fetch
+      // Placeholder: fetch('/api/address/delete', { addressId })
       if (selectedAddressId === addressId) {
         setSelectedAddressId('');
       }
-
       await loadAddresses(user.id);
     } catch (err) {
       setAddressActionError(err.message || 'Unable to delete address.');
@@ -320,44 +229,9 @@ const Cart = () => {
       setPlacingOrder(true);
 
       try {
-        const { data: order, error: orderError } = await supabase
-          .from('orders')
-          .insert({
-            user_id: user.id,
-            total_amount: totalWithTax,
-            status: 'pending',
-            payment_status: 'unpaid',
-            shipping_address: {
-              full_name: selectedAddress.fullName,
-              phone: selectedAddress.phone,
-              email: user.email,
-              line1: selectedAddress.line1,
-              line2: selectedAddress.line2,
-              city: selectedAddress.city,
-              state: selectedAddress.state,
-              postal_code: selectedAddress.postalCode,
-              country: selectedAddress.country,
-            },
-          })
-          .select('id')
-          .single();
-
-        if (orderError) throw orderError;
-
-        const orderItems = items.map((item) => ({
-          order_id: order.id,
-          product_id: item.id,
-          quantity: item.quantity,
-          price_at_purchase: item.price,
-        }));
-
-        const { error: itemsError } = await supabase
-          .from('order_items')
-          .insert(orderItems);
-
-        if (itemsError) throw itemsError;
-
-        setOrderId(order.id);
+        // TODO: Replace with Neon fetch
+        // Placeholder: fetch('/api/order', { ...order details })
+        setOrderId('mockOrderId');
         setOrderSummary(items.map((item) => ({
           name: item.name,
           quantity: item.quantity,

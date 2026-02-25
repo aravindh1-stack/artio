@@ -6,7 +6,6 @@ import Button from '../components/ui/Button';
 import Input from '../components/ui/Input';
 import Card from '../components/ui/Card';
 
-import { useAuthStore } from '../store/authStore';
 import artioLightLogo from '../assets/artio-light-logo.png';
 import artioDarkLogo from '../assets/artio-dark-logo.png';
 
@@ -61,27 +60,10 @@ const Auth = () => {
           throw new Error('Password must be at least 6 characters');
         }
 
-        const { data, error } = await supabase.auth.signUp({
-          email: formData.email,
-          password: formData.password,
-          options: {
-            emailRedirectTo: window.location.origin,
-            data: {
-              full_name: formData.fullName,
-              phone: formData.phone,
-            },
-          },
-        });
-
-        if (error) throw error;
-
-        if (data.session) {
-          setUser(data.user);
-          setSession(data.session);
-          navigate('/');
-        } else {
-          setInfo('Check your email to confirm your account before signing in.');
-        }
+        // TODO: Replace with Neon/pg signup logic
+        // Placeholder: fetch('/api/signup', { ...formData })
+        setInfo('Signup successful! Please check your email to verify your account.');
+        setError('');
       }
     } catch (err) {
       setError(err.message);

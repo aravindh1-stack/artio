@@ -5,7 +5,6 @@ import { ShoppingCart, Eye, Filter } from 'lucide-react';
 import Card from '../components/ui/Card';
 import Button from '../components/ui/Button';
 import Modal from '../components/ui/Modal';
-import { supabase } from '../lib/supabase';
 import { useCartStore } from '../store/cartStore';
 
 const Store = () => {
@@ -56,36 +55,59 @@ const Store = () => {
     };
   }, []);
 
+  // Mock fetch for categories
   const fetchCategories = async () => {
-    const { data, error } = await supabase
-      .from('categories')
-      .select('*')
-      .order('display_order', { ascending: true });
-
-    if (!error && data) {
-      setCategories(data);
-    }
+    // Replace with Neon/pg fetch later
+    const mockCategories = [
+      { id: 1, name: 'Abstract', slug: 'abstract', image_path: 'abstract.jpg', display_order: 1 },
+      { id: 2, name: 'Nature', slug: 'nature', image_path: 'nature.jpg', display_order: 2 },
+      { id: 3, name: 'Urban', slug: 'urban', image_path: 'urban.jpg', display_order: 3 },
+    ];
+    setCategories(mockCategories);
   };
 
+  // Mock fetch for products
   const fetchProducts = async () => {
-    let query = supabase
-      .from('products')
-      .select('*, categories(name, slug)')
-      .eq('is_active', true);
-
-    if (selectedCategoryId) {
-      query = supabase
-        .from('products')
-        .select('*, categories(name, slug)')
-        .eq('is_active', true)
-        .eq('category_id', selectedCategoryId);
-    }
-
-    const { data, error } = await query;
-
-    if (!error && data) {
-      setProducts(data);
-    }
+    // Replace with Neon/pg fetch later
+    const mockProducts = [
+      {
+        id: 1,
+        name: 'Redefined Poster 1',
+        description: 'Premium museum-quality print for your space.',
+        price: 49.99,
+        image_path: 'poster1.jpg',
+        categories: { name: 'Abstract', slug: 'abstract' },
+        stock_quantity: 10,
+        dimensions: '24x36 in',
+        is_active: true,
+      },
+      {
+        id: 2,
+        name: 'Redefined Poster 2',
+        description: 'Bring nature indoors with this stunning piece.',
+        price: 59.99,
+        image_path: 'poster2.jpg',
+        categories: { name: 'Nature', slug: 'nature' },
+        stock_quantity: 5,
+        dimensions: '18x24 in',
+        is_active: true,
+      },
+      {
+        id: 3,
+        name: 'Redefined Poster 3',
+        description: 'Urban vibes for modern interiors.',
+        price: 39.99,
+        image_path: 'poster3.jpg',
+        categories: { name: 'Urban', slug: 'urban' },
+        stock_quantity: 8,
+        dimensions: '20x30 in',
+        is_active: true,
+      },
+    ];
+    const filtered = selectedCategoryId
+      ? mockProducts.filter((p) => categories.find((c) => c.id === selectedCategoryId && c.name === p.categories.name))
+      : mockProducts;
+    setProducts(filtered);
   };
 
   const handleAddToCart = (product) => {
@@ -158,7 +180,7 @@ const Store = () => {
               >
                 {category.image_path && (
                   <img
-                    src={`https://rjxssugbubunjkbqewob.supabase.co/storage/v1/object/public/categories/${category.image_path}`}
+                    src={`/gallery/${category.image_path}`}
                     alt={category.name}
                     className="w-6 h-6 object-cover rounded-full border border-gray-300 dark:border-gray-700"
                   />
@@ -192,7 +214,7 @@ const Store = () => {
                       <img
                         src={
                           product.image_path
-                            ? `https://rjxssugbubunjkbqewob.supabase.co/storage/v1/object/public/products/${product.image_path}`
+                            ? `/gallery/${product.image_path}`
                             : '/placeholder.png'
                         }
                         alt={product.name}
@@ -257,7 +279,7 @@ const Store = () => {
               <img
                 src={
                   quickViewProduct.image_path
-                    ? `https://rjxssugbubunjkbqewob.supabase.co/storage/v1/object/public/products/${quickViewProduct.image_path}`
+                    ? `/gallery/${quickViewProduct.image_path}`
                     : '/placeholder.png'
                 }
                 alt={quickViewProduct.name}

@@ -12,35 +12,56 @@ const Orders = () => {
   const [downloadingId, setDownloadingId] = useState('');
   const navigate = useNavigate();
 
+  // Auth Protection: User illana login-ku poga vekkum
   useEffect(() => {
     if (!loading && !user) {
       navigate('/auth');
     }
   }, [loading, user, navigate]);
 
+  // Neon DB-la irundhu orders fetch panna
   useEffect(() => {
     const fetchOrders = async () => {
       if (!user) return;
-      setOrders([]); // Placeholder
+      
+      try {
+        // Inga unga Neon API call varum
+        // const response = await fetch(`/api/orders?userId=${user.id}`);
+        // const data = await response.json();
+        // setOrders(data);
+        
+        setOrders([]); // Ippo current-ah placeholder
+      } catch (err) {
+        setError('Orders fetch panna mudiyala. Check connection.');
+      }
     };
     fetchOrders();
   }, [user]);
 
+  // Secure Download Logic
   const handleDownload = async (productId, itemId) => {
     setDownloadError('');
     setDownloadingId(itemId);
+    
     try {
-      // TODO: Replace with Neon/pg download logic
+      // 1. Backend-ku request anupuvom (Signed URL kekka)
+      // 2. Neon-la payment status 'paid'-ah irundha backend signed URL tharum
+      // 3. Adha use panni download start pannuvom
+      
+      console.log(`Downloading high-res poster for product: ${productId}`);
+      
+      // Temporary logic:
+      // window.location.href = `/api/download/${productId}`;
+      
     } catch (err) {
-      setDownloadError(err?.message || 'Download failed.');
+      setDownloadError(err?.message || 'Download failed. Please try again.');
     } finally {
       setDownloadingId('');
     }
   };
 
-  if (!user) {
-    return null;
-  }
+  if (loading) return <div className="pt-20 text-center">Loading Artio Gallery...</div>;
+  if (!user) return null;
 
   return (
     <div className="min-h-screen pt-20 pb-12 bg-gray-50 dark:bg-gray-950">
@@ -51,50 +72,56 @@ const Orders = () => {
             <Button variant="outline">Browse Store</Button>
           </Link>
         </div>
-        {error && (
+
+        {/* Error Notifications */}
+        {(error || downloadError) && (
           <div className="mb-6 p-4 rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800">
-            <p className="text-sm text-red-600 dark:text-red-400">{error}</p>
+            <p className="text-sm text-red-600 dark:text-red-400">{error || downloadError}</p>
           </div>
         )}
-        {downloadError && (
-          <div className="mb-6 p-4 rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800">
-            <p className="text-sm text-red-600 dark:text-red-400">{downloadError}</p>
-          </div>
-        )}
+
         {orders.length === 0 ? (
-          <Card className="p-8">
-            <p className="text-gray-600 dark:text-gray-400">No orders yet.</p>
+          <Card className="p-8 text-center">
+            <p className="text-gray-600 dark:text-gray-400 mb-4">Neenga inum posters purchase pannala.</p>
+            <Link to="/store">
+                <Button>Start Shopping</Button>
+            </Link>
           </Card>
         ) : (
           <div className="space-y-6">
             {orders.map((order) => (
-              <Card key={order.id} className="p-6">
+              <Card key={order.id} className="p-6 border-l-4 border-l-blue-500">
                 <div className="flex flex-wrap items-center justify-between gap-4 mb-4">
                   <div>
-                    <p className="font-semibold">Order {order.id}</p>
+                    <p className="font-semibold text-lg">Order #{order.id}</p>
                     <p className="text-sm text-gray-600 dark:text-gray-400">
-                      Status: {order.status} · Payment: {order.payment_status || 'unpaid'}
+                      Status: <span className="capitalize">{order.status}</span> · 
+                      Payment: <span className={order.payment_status === 'paid' ? 'text-green-500' : 'text-orange-500'}>
+                        {order.payment_status || 'unpaid'}
+                      </span>
                     </p>
                   </div>
-                  <p className="text-lg font-bold">${Number(order.total_amount).toFixed(2)}</p>
+                  <p className="text-xl font-bold text-blue-600">${Number(order.total_amount).toFixed(2)}</p>
                 </div>
 
-                <div className="space-y-3">
+                <div className="space-y-3 mt-4 border-t pt-4 dark:border-gray-800">
                   {(order.order_items || []).map((item) => (
                     <div key={item.id} className="flex flex-wrap items-center justify-between gap-4">
                       <div>
-                        <p className="font-medium">{item.products?.name || 'Product'}</p>
+                        <p className="font-medium">{item.products?.name || 'Artio Poster'}</p>
                         <p className="text-sm text-gray-600 dark:text-gray-400">
                           Qty {item.quantity} · ${Number(item.price_at_purchase).toFixed(2)}
                         </p>
                       </div>
+                      
                       <Button
                         size="sm"
-                        variant="outline"
+                        variant={order.payment_status === 'paid' ? "primary" : "outline"}
                         disabled={order.payment_status !== 'paid' || downloadingId === item.id}
                         onClick={() => handleDownload(item.product_id, item.id)}
                       >
-                        {downloadingId === item.id ? 'Preparing...' : 'Download'}
+                        {downloadingId === item.id ? 'Securing Link...' : 
+                         order.payment_status === 'paid' ? 'Download High-Res' : 'Payment Required'}
                       </Button>
                     </div>
                   ))}

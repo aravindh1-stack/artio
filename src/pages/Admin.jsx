@@ -80,7 +80,7 @@ const Admin = () => {
   const [orders, setOrders] = useState([]);
   const [selectedOrder, setSelectedOrder] = useState(null);
 
-              // const { data, error: uploadError } = await supabase.storage.from('products').upload(fileName, file, { upsert: true });
+              // TODO: Replace with Neon upload logic
   const [selectedUser, setSelectedUser] = useState(null);
   const [userAddresses, setUserAddresses] = useState([]);
 
@@ -667,7 +667,7 @@ const Admin = () => {
                   <div key={item.id} className="flex items-center gap-3 text-sm text-gray-600 dark:text-gray-400">
                     {item.products?.image_path && (
                       <img
-                        src={`https://rjxssugbubunjkbqewob.supabase.co/storage/v1/object/public/products/${item.products.image_path}`}
+                        src={`/gallery/${item.products.image_path}`}
                         alt={item.products?.name || 'Product'}
                         className="w-12 h-12 object-cover rounded border"
                         style={{ aspectRatio: '1/1' }}
