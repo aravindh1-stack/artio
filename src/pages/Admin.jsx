@@ -28,7 +28,6 @@ async function addWatermarkToImage(file, watermarkText) {
   });
 }
 import { useEffect, useState } from 'react';
-import { pool } from '../lib/db';
 import Card from '../components/ui/Card';
 import Button from '../components/ui/Button';
 import Input from '../components/ui/Input';
