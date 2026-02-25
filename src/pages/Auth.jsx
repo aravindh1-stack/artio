@@ -8,6 +8,7 @@ import Card from '../components/ui/Card';
 
 import artioLightLogo from '../assets/artio-light-logo.png';
 import artioDarkLogo from '../assets/artio-dark-logo.png';
+import { useAuthStore } from '../store/authStore';
 
 const Auth = () => {
   const [isLogin, setIsLogin] = useState(true);
