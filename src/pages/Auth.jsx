@@ -87,7 +87,7 @@ const Auth = () => {
         };
         await emailjs.send(
           'service_ypdqd7b', // Your Service ID
-          'YOUR_TEMPLATE_ID', // Replace with your Template ID
+          'template_whb74ht', // Your actual Template ID
           templateParams,
           'YOUR_PUBLIC_KEY'   // Replace with your Public Key
         );
