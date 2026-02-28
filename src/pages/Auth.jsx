@@ -62,8 +62,36 @@ const Auth = () => {
           throw new Error('Password must be at least 6 characters');
         }
 
-        // TODO: Replace with Neon/pg signup logic
-        // Placeholder: fetch('/api/signup', { ...formData })
+        // Neon signup logic (placeholder)
+        // Generate a verification token
+        const verificationToken = Math.random().toString(36).substr(2, 16);
+        // Save user and token to Neon (replace with your Neon REST API call)
+        // await fetch('YOUR_NEON_SIGNUP_ENDPOINT', {
+        //   method: 'POST',
+        //   headers: { 'Content-Type': 'application/json' },
+        //   body: JSON.stringify({
+        //     fullName: formData.fullName,
+        //     phone: formData.phone,
+        //     email: formData.email,
+        //     password: formData.password,
+        //     verificationToken,
+        //   }),
+        // });
+
+        // Send verification email using EmailJS
+        const verificationLink = `${window.location.origin}/verify?token=${verificationToken}`;
+        const templateParams = {
+          email: formData.email,
+          full_name: formData.fullName,
+          verification_link: verificationLink,
+        };
+        await emailjs.send(
+          'service_ypdqd7b', // Your Service ID
+          'YOUR_TEMPLATE_ID', // Replace with your Template ID
+          templateParams,
+          'YOUR_PUBLIC_KEY'   // Replace with your Public Key
+        );
+
         setInfo('Signup successful! Please check your email to verify your account.');
         setError('');
       }
