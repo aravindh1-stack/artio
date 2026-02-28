@@ -155,14 +155,22 @@ const Admin = () => {
   };
 
   const saveProduct = async () => {
-    // TODO: Implement Neon/pg logic for saving product and uploading image
     setUploading(true);
-    // Placeholder: simulate upload
-    setTimeout(() => {
+    try {
+      // Replace with your Neon REST API endpoint and payload
+      await fetch('https://your-neon-api-endpoint/products', {
+        method: productForm.id ? 'PUT' : 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(productForm),
+      });
       setProductModalOpen(false);
-      setUploading(false);
       loadProducts();
-    }, 1000);
+    } catch (err) {
+      // Optionally show error message
+      alert('Failed to save product.');
+    } finally {
+      setUploading(false);
+    }
   };
 
   const deleteProduct = async (productId) => {
