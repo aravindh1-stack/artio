@@ -89,7 +89,7 @@ const Auth = () => {
           'service_ypdqd7b', // Your Service ID
           'template_whb74ht', // Your actual Template ID
           templateParams,
-          'YOUR_PUBLIC_KEY'   // Replace with your Public Key
+          'Pk7ZGw-YxuJh6FcQ1'   // Your actual Public Key
         );
 
         setInfo('Signup successful! Please check your email to verify your account.');
