@@ -37,7 +37,7 @@ function App() {
     };
 
     const handleKeyDown = (event) => {
-      const key = event.key.toLowerCase();
+      const key = event.key ? event.key.toLowerCase() : '';
       const isCtrl = event.ctrlKey || event.metaKey;
 
       if (
