@@ -114,19 +114,23 @@ const Cart = () => {
   };
 
   const startEditAddress = (address) => {
-    setEditingAddressId(address.id);
+    if (!address) {
+      setAddressActionError('Address not found.');
+      return;
+    }
+    setEditingAddressId(address.id ?? '');
     setAddressActionError('');
     setAddressForm({
-      fullName: address.fullName,
-      phone: address.phone,
-      line1: address.line1,
-      line2: address.line2,
-      city: address.city,
-      state: address.state,
-      postalCode: address.postalCode,
-      country: address.country,
+      fullName: address.fullName ?? '',
+      phone: address.phone ?? '',
+      line1: address.line1 ?? '',
+      line2: address.line2 ?? '',
+      city: address.city ?? '',
+      state: address.state ?? '',
+      postalCode: address.postalCode ?? '',
+      country: address.country ?? '',
     });
-    setSetDefaultOnSave(address.isDefault);
+    setSetDefaultOnSave(address.isDefault ?? false);
     setShowAddressForm(true);
   };
 
@@ -471,9 +475,9 @@ const Cart = () => {
                   <div className="space-y-4">
                     {addresses.map((address) => (
                       <div
-                        key={address.id}
+                        key={address?.id ?? Math.random()}
                         className={`p-4 rounded-lg border ${
-                          selectedAddressId === address.id
+                          selectedAddressId === (address?.id ?? '')
                             ? 'border-black dark:border-white'
                             : 'border-gray-200 dark:border-gray-800'
                         }`}
@@ -482,24 +486,24 @@ const Cart = () => {
                           <input
                             type="radio"
                             name="selectedAddress"
-                            checked={selectedAddressId === address.id}
-                            onChange={() => setSelectedAddressId(address.id)}
+                            checked={selectedAddressId === (address?.id ?? '')}
+                            onChange={() => setSelectedAddressId(address?.id ?? '')}
                           />
                           <div className="flex-1">
-                            <p className="font-semibold">{address.fullName}</p>
+                            <p className="font-semibold">{address?.fullName ?? ''}</p>
                             <p className="text-sm text-gray-600 dark:text-gray-400">
-                              {address.phone}
+                              {address?.phone ?? ''}
                             </p>
                             <p className="text-sm text-gray-600 dark:text-gray-400">
-                              {address.line1} {address.line2}
+                              {address?.line1 ?? ''} {address?.line2 ?? ''}
                             </p>
                             <p className="text-sm text-gray-600 dark:text-gray-400">
-                              {address.city}, {address.state} {address.postalCode}
+                              {address?.city ?? ''}, {address?.state ?? ''} {address?.postalCode ?? ''}
                             </p>
                             <p className="text-sm text-gray-600 dark:text-gray-400">
-                              {address.country}
+                              {address?.country ?? ''}
                             </p>
-                            {address.isDefault && (
+                            {address?.isDefault && (
                               <span className="text-xs text-gray-500 dark:text-gray-400">Default</span>
                             )}
                           </div>
@@ -512,10 +516,10 @@ const Cart = () => {
                           >
                             Edit
                           </Button>
-                          {!address.isDefault && (
+                          {!address?.isDefault && (
                             <button
                               type="button"
-                              onClick={() => handleSetDefault(address.id)}
+                              onClick={() => handleSetDefault(address?.id ?? '')}
                               className="text-sm text-gray-600 dark:text-gray-400 hover:text-black dark:hover:text-white"
                             >
                               Set default
@@ -523,7 +527,7 @@ const Cart = () => {
                           )}
                           <button
                             type="button"
-                            onClick={() => handleDeleteAddress(address.id)}
+                            onClick={() => handleDeleteAddress(address?.id ?? '')}
                             className="text-sm text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300"
                           >
                             Remove
