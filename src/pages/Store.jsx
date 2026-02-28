@@ -57,25 +57,25 @@ const Store = () => {
 
   // Mock fetch for categories
   const fetchCategories = async () => {
-    // Replace with Neon/pg fetch later
+    // Use placeholder images that exist in public/
     const mockCategories = [
-      { id: 1, name: 'Abstract', slug: 'abstract', image_path: 'abstract.jpg', display_order: 1 },
-      { id: 2, name: 'Nature', slug: 'nature', image_path: 'nature.jpg', display_order: 2 },
-      { id: 3, name: 'Urban', slug: 'urban', image_path: 'urban.jpg', display_order: 3 },
+      { id: 1, name: 'Abstract', slug: 'abstract', image_path: 'vite.svg', display_order: 1 },
+      { id: 2, name: 'Nature', slug: 'nature', image_path: 'icon-192.png', display_order: 2 },
+      { id: 3, name: 'Urban', slug: 'urban', image_path: 'icon-512.png', display_order: 3 },
     ];
     setCategories(mockCategories);
   };
 
   // Mock fetch for products
   const fetchProducts = async () => {
-    // Replace with Neon/pg fetch later
+    // Use placeholder images that exist in public/
     const mockProducts = [
       {
         id: 1,
         name: 'Redefined Poster 1',
         description: 'Premium museum-quality print for your space.',
         price: 49.99,
-        image_path: 'artio-light-logo.png',
+        image_path: 'vite.svg',
         categories: { name: 'Abstract', slug: 'abstract' },
         stock_quantity: 10,
         dimensions: '24x36 in',
@@ -86,7 +86,7 @@ const Store = () => {
         name: 'Redefined Poster 2',
         description: 'Bring nature indoors with this stunning piece.',
         price: 59.99,
-        image_path: 'artio-dark-logo.png',
+        image_path: 'icon-192.png',
         categories: { name: 'Nature', slug: 'nature' },
         stock_quantity: 5,
         dimensions: '18x24 in',
@@ -97,7 +97,7 @@ const Store = () => {
         name: 'Redefined Poster 3',
         description: 'Urban vibes for modern interiors.',
         price: 39.99,
-        image_path: 'react.svg',
+        image_path: 'icon-512.png',
         categories: { name: 'Urban', slug: 'urban' },
         stock_quantity: 8,
         dimensions: '20x30 in',
