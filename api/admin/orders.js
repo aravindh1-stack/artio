@@ -1,0 +1,79 @@
+import { getPool } from '../_db.js';
+
+export default async function handler(req, res) {
+  const pool = getPool();
+
+  try {
+    if (req.method === 'GET') {
+      const ordersResult = await pool.query(
+        `SELECT id, user_id, status, payment_status, total_amount, shipping_address, created_at
+         FROM orders
+         ORDER BY created_at DESC`
+      );
+
+      const itemsResult = await pool.query(
+        `SELECT oi.id, oi.order_id, oi.quantity, oi.price_at_purchase,
+                p.id AS product_id, p.name AS product_name, p.image_url AS product_image_url
+         FROM order_items oi
+         LEFT JOIN products p ON p.id = oi.product_id`
+      );
+
+      const itemsByOrder = itemsResult.rows.reduce((acc, row) => {
+        if (!acc[row.order_id]) {
+          acc[row.order_id] = [];
+        }
+        acc[row.order_id].push({
+          id: row.id,
+          order_id: row.order_id,
+          quantity: row.quantity,
+          price_at_purchase: row.price_at_purchase,
+          products: {
+            id: row.product_id,
+            name: row.product_name,
+            image_path: row.product_image_url,
+          },
+        });
+        return acc;
+      }, {});
+
+      const orders = ordersResult.rows.map((order) => ({
+        ...order,
+        order_items: itemsByOrder[order.id] || [],
+      }));
+
+      return res.status(200).json(orders);
+    }
+
+    if (req.method === 'PATCH') {
+      const { orderId, status, payment_status } = req.body ?? {};
+      if (!orderId) {
+        return res.status(400).json({ error: 'orderId is required' });
+      }
+
+      const current = await pool.query('SELECT id, status, payment_status FROM orders WHERE id = $1', [orderId]);
+      if (current.rowCount === 0) {
+        return res.status(404).json({ error: 'Order not found' });
+      }
+
+      const nextStatus = status ?? current.rows[0].status;
+      const nextPaymentStatus = payment_status ?? current.rows[0].payment_status;
+
+      const result = await pool.query(
+        `UPDATE orders
+         SET status = $1,
+             payment_status = $2,
+             updated_at = now()
+         WHERE id = $3
+         RETURNING id, user_id, status, payment_status, total_amount, shipping_address, created_at`,
+        [nextStatus, nextPaymentStatus, orderId]
+      );
+
+      return res.status(200).json(result.rows[0]);
+    }
+
+    res.setHeader('Allow', ['GET', 'PATCH']);
+    return res.status(405).json({ error: 'Method not allowed' });
+  } catch (error) {
+    return res.status(500).json({ error: error.message || 'Orders API failed' });
+  }
+}

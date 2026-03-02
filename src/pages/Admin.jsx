@@ -82,6 +82,7 @@ const Admin = () => {
               // TODO: Replace with Neon upload logic
   const [selectedUser, setSelectedUser] = useState(null);
   const [userAddresses, setUserAddresses] = useState([]);
+  const [users, setUsers] = useState([]);
 
   const [categories, setCategories] = useState([]);
   const [products, setProducts] = useState([]);
@@ -99,29 +100,49 @@ const Admin = () => {
   ];
 
   const loadOrders = async () => {
-    // TODO: Replace with Neon/pg query
-    setOrders([]); // Placeholder
+    const response = await fetch('/api/admin/orders');
+    const data = await response.json();
+    if (!response.ok) {
+      throw new Error(data.error || 'Unable to load orders');
+    }
+    setOrders(Array.isArray(data) ? data : []);
   };
 
   const loadUsers = async () => {
-    // TODO: Replace with Neon/pg query
-    setUsers([]); // Placeholder
+    const response = await fetch('/api/admin/users');
+    const data = await response.json();
+    if (!response.ok) {
+      throw new Error(data.error || 'Unable to load users');
+    }
+    setUsers(Array.isArray(data) ? data : []);
   };
 
   const loadProducts = async () => {
-    // TODO: Replace with Neon/pg query
-    setProducts([]); // Placeholder
+    const response = await fetch('/api/admin/products');
+    const data = await response.json();
+    if (!response.ok) {
+      throw new Error(data.error || 'Unable to load products');
+    }
+    setProducts(Array.isArray(data) ? data : []);
   };
 
   const loadCategories = async () => {
-    // TODO: Replace with Neon/pg query
-    setCategories([]); // Placeholder
+    const response = await fetch('/api/admin/categories');
+    const data = await response.json();
+    if (!response.ok) {
+      throw new Error(data.error || 'Unable to load categories');
+    }
+    setCategories(Array.isArray(data) ? data : []);
   };
 
   const refreshAll = async () => {
     setLoading(true);
     setError('');
-    await Promise.all([loadOrders(), loadUsers(), loadProducts(), loadCategories()]);
+    try {
+      await Promise.all([loadOrders(), loadUsers(), loadProducts(), loadCategories()]);
+    } catch (err) {
+      setError(err.message || 'Failed to refresh admin data.');
+    }
     setLoading(false);
   };
 
@@ -157,17 +178,19 @@ const Admin = () => {
   const saveProduct = async () => {
     setUploading(true);
     try {
-      // Replace with your Neon REST API endpoint and payload
-      await fetch('https://your-neon-api-endpoint/products', {
+      const response = await fetch('/api/admin/products', {
         method: productForm.id ? 'PUT' : 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(productForm),
       });
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to save product.');
+      }
       setProductModalOpen(false);
-      loadProducts();
+      await loadProducts();
     } catch (err) {
-      // Optionally show error message
-      alert('Failed to save product.');
+      setError(err.message || 'Failed to save product.');
     } finally {
       setUploading(false);
     }
@@ -175,8 +198,18 @@ const Admin = () => {
 
   const deleteProduct = async (productId) => {
     if (!window.confirm('Delete this product?')) return;
-    // TODO: Implement Neon/pg logic for deleting product
-    loadProducts();
+    try {
+      const response = await fetch(`/api/admin/products?id=${encodeURIComponent(productId)}`, {
+        method: 'DELETE',
+      });
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to delete product.');
+      }
+      await loadProducts();
+    } catch (err) {
+      setError(err.message || 'Failed to delete product.');
+    }
   };
 
   const openCategoryModal = (category) => {
@@ -196,35 +229,90 @@ const Admin = () => {
   };
 
   const saveCategory = async () => {
-    // TODO: Implement Neon/pg logic for saving category
-    setCategoryModalOpen(false);
-    loadCategories();
+    try {
+      const response = await fetch('/api/admin/categories', {
+        method: categoryForm.id ? 'PUT' : 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(categoryForm),
+      });
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to save category.');
+      }
+      setCategoryModalOpen(false);
+      await loadCategories();
+    } catch (err) {
+      setError(err.message || 'Failed to save category.');
+    }
   };
 
   const deleteCategory = async (categoryId) => {
     if (!window.confirm('Delete this category?')) return;
-    // TODO: Implement Neon/pg logic for deleting category
-    loadCategories();
+    try {
+      const response = await fetch(`/api/admin/categories?id=${encodeURIComponent(categoryId)}`, {
+        method: 'DELETE',
+      });
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to delete category.');
+      }
+      await loadCategories();
+    } catch (err) {
+      setError(err.message || 'Failed to delete category.');
+    }
   };
 
   const loadUserAddresses = async (userId) => {
-    // TODO: Implement Neon/pg logic for loading user addresses
-    setUserAddresses([]); // Placeholder
+    try {
+      const response = await fetch(`/api/admin/user-addresses?userId=${encodeURIComponent(userId)}`);
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to load addresses.');
+      }
+      setUserAddresses(Array.isArray(data) ? data : []);
+    } catch (err) {
+      setError(err.message || 'Failed to load addresses.');
+      setUserAddresses([]);
+    }
   };
 
   const openUserModal = async (user) => {
     setSelectedUser(user);
-    loadUserAddresses(user.id);
+    await loadUserAddresses(user.id);
   };
 
   const updateUserRole = async (userId, nextRole) => {
-    // TODO: Implement Neon/pg logic for updating user role
-    loadUsers();
+    try {
+      const response = await fetch('/api/admin/users', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId, role: nextRole }),
+      });
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to update user role.');
+      }
+      await loadUsers();
+    } catch (err) {
+      setError(err.message || 'Failed to update user role.');
+    }
   };
 
   const updateOrder = async (orderId, payload) => {
-    // TODO: Implement Neon/pg logic for updating order
-    loadOrders();
+    try {
+      const response = await fetch('/api/admin/orders', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ orderId, ...payload }),
+      });
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to update order.');
+      }
+      await loadOrders();
+    } catch (err) {
+      setError(err.message || 'Failed to update order.');
+    }
   };
 
   return (
