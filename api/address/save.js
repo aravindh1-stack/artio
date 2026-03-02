@@ -1,4 +1,4 @@
-import { ensureAddressesTable, getPool } from '../_db.js';
+import { ensureAddressesTable, getPool, normalizeUserId } from '../_db.js';
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
@@ -7,7 +7,7 @@ export default async function handler(req, res) {
   }
 
   const {
-    userId,
+    userId: rawUserId,
     addressId,
     fullName,
     phone,
@@ -19,6 +19,8 @@ export default async function handler(req, res) {
     country,
     isDefault,
   } = req.body ?? {};
+
+  const userId = normalizeUserId(rawUserId);
 
   if (!userId || !fullName || !phone || !line1 || !city || !state || !postalCode || !country) {
     return res.status(400).json({ error: 'Missing required address fields' });

@@ -1,9 +1,11 @@
 import pg from 'pg';
+import { createHash } from 'crypto';
 
 const { Pool } = pg;
 
 let pool;
 let addressesTableReady = false;
+const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
 export function getPool() {
   if (!pool) {
@@ -14,6 +16,23 @@ export function getPool() {
   }
 
   return pool;
+}
+
+export function normalizeUserId(userId) {
+  const rawValue = String(userId ?? '').trim().toLowerCase();
+  if (!rawValue) {
+    return '';
+  }
+
+  if (uuidRegex.test(rawValue)) {
+    return rawValue;
+  }
+
+  const hash = createHash('sha256').update(rawValue).digest('hex');
+  const version = `4${hash.slice(13, 16)}`;
+  const variantNibble = ['8', '9', 'a', 'b'][parseInt(hash[16], 16) % 4];
+  const variant = `${variantNibble}${hash.slice(17, 20)}`;
+  return `${hash.slice(0, 8)}-${hash.slice(8, 12)}-${version}-${variant}-${hash.slice(20, 32)}`;
 }
 
 export async function ensureAddressesTable() {

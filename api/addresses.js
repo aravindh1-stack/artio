@@ -1,4 +1,4 @@
-import { ensureAddressesTable, getPool } from './_db.js';
+import { ensureAddressesTable, getPool, normalizeUserId } from './_db.js';
 
 export default async function handler(req, res) {
   if (req.method !== 'GET') {
@@ -6,7 +6,7 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  const userId = req.query.userId;
+  const userId = normalizeUserId(req.query.userId);
   if (!userId) {
     return res.status(400).json({ error: 'userId is required' });
   }
