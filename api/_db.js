@@ -5,6 +5,7 @@ const { Pool } = pg;
 
 let pool;
 let addressesTableReady = false;
+let adminSchemaReady = false;
 const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
 export function getPool() {
@@ -61,4 +62,30 @@ export async function ensureAddressesTable() {
   await currentPool.query('CREATE INDEX IF NOT EXISTS idx_addresses_user_id ON addresses(user_id)');
   await currentPool.query('CREATE INDEX IF NOT EXISTS idx_addresses_user_default ON addresses(user_id, is_default)');
   addressesTableReady = true;
+}
+
+export async function ensureAdminSchema() {
+  if (adminSchemaReady) {
+    return;
+  }
+
+  const currentPool = getPool();
+  await currentPool.query(`
+    ALTER TABLE products
+      ADD COLUMN IF NOT EXISTS image_url text DEFAULT '',
+      ADD COLUMN IF NOT EXISTS image_path text DEFAULT '',
+      ADD COLUMN IF NOT EXISTS preview_image_url text DEFAULT '',
+      ADD COLUMN IF NOT EXISTS full_image_path text DEFAULT ''
+  `);
+  await currentPool.query(`
+    ALTER TABLE categories
+      ADD COLUMN IF NOT EXISTS image_url text DEFAULT '',
+      ADD COLUMN IF NOT EXISTS image_path text DEFAULT ''
+  `);
+  await currentPool.query(`
+    ALTER TABLE orders
+      ADD COLUMN IF NOT EXISTS payment_status text DEFAULT 'unpaid'
+  `);
+
+  adminSchemaReady = true;
 }

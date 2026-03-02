@@ -1,4 +1,4 @@
-import { getPool } from '../_db.js';
+import { ensureAdminSchema, getPool } from '../_db.js';
 
 const mapProduct = (row) => ({
   id: row.id,
@@ -7,7 +7,7 @@ const mapProduct = (row) => ({
   slug: row.slug,
   description: row.description,
   price: row.price,
-  image_path: row.image_url || '',
+  image_path: row.image_url || row.image_path || '',
   preview_image_url: row.preview_image_url || '',
   full_image_path: row.full_image_path || '',
   dimensions: row.dimensions || '',
@@ -21,6 +21,7 @@ export default async function handler(req, res) {
   const pool = getPool();
 
   try {
+    await ensureAdminSchema();
     if (req.method === 'GET') {
       const result = await pool.query(
         `SELECT p.*, c.name AS category_name

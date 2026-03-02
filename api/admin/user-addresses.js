@@ -1,4 +1,4 @@
-import { getPool, normalizeUserId } from '../_db.js';
+import { ensureAdminSchema, getPool, normalizeUserId } from '../_db.js';
 
 export default async function handler(req, res) {
   if (req.method !== 'GET') {
@@ -12,6 +12,7 @@ export default async function handler(req, res) {
   }
 
   try {
+    await ensureAdminSchema();
     const pool = getPool();
     const result = await pool.query(
       `SELECT id, user_id, full_name, phone, address_line1, address_line2, city, state, postal_code, country, is_default

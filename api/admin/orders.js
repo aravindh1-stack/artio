@@ -1,9 +1,10 @@
-import { getPool } from '../_db.js';
+import { ensureAdminSchema, getPool } from '../_db.js';
 
 export default async function handler(req, res) {
   const pool = getPool();
 
   try {
+    await ensureAdminSchema();
     if (req.method === 'GET') {
       const ordersResult = await pool.query(
         `SELECT id, user_id, status, payment_status, total_amount, shipping_address, created_at
@@ -13,7 +14,8 @@ export default async function handler(req, res) {
 
       const itemsResult = await pool.query(
         `SELECT oi.id, oi.order_id, oi.quantity, oi.price_at_purchase,
-                p.id AS product_id, p.name AS product_name, p.image_url AS product_image_url
+          p.id AS product_id, p.name AS product_name,
+          COALESCE(p.image_url, p.image_path, '') AS product_image_url
          FROM order_items oi
          LEFT JOIN products p ON p.id = oi.product_id`
       );

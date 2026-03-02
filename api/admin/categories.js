@@ -1,11 +1,11 @@
-import { getPool } from '../_db.js';
+import { ensureAdminSchema, getPool } from '../_db.js';
 
 const mapCategory = (row) => ({
   id: row.id,
   name: row.name,
   slug: row.slug,
   description: row.description || '',
-  image_path: row.image_url || '',
+  image_path: row.image_url || row.image_path || '',
   display_order: row.display_order || 0,
 });
 
@@ -13,6 +13,7 @@ export default async function handler(req, res) {
   const pool = getPool();
 
   try {
+    await ensureAdminSchema();
     if (req.method === 'GET') {
       const result = await pool.query('SELECT * FROM categories ORDER BY display_order ASC, created_at DESC');
       return res.status(200).json(result.rows.map(mapCategory));
