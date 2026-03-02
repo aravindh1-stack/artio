@@ -1,4 +1,4 @@
-import { getPool } from '../_db.js';
+import { ensureAddressesTable, getPool } from '../_db.js';
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
@@ -12,6 +12,7 @@ export default async function handler(req, res) {
   }
 
   try {
+    await ensureAddressesTable();
     const pool = getPool();
     const result = await pool.query('DELETE FROM addresses WHERE id = $1 AND user_id = $2 RETURNING id', [addressId, userId]);
 
@@ -21,6 +22,6 @@ export default async function handler(req, res) {
 
     return res.status(200).json({ success: true });
   } catch (error) {
-    return res.status(500).json({ error: 'Failed to delete address' });
+    return res.status(500).json({ error: error.message || 'Failed to delete address' });
   }
 }

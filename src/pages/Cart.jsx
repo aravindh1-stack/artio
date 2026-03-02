@@ -49,6 +49,8 @@ const Cart = () => {
     email: 'payments@example.com',
   };
 
+  const currentUserId = user?.id || user?.email || '';
+
   const mapAddress = (address) => ({
     id: address?.id ?? '',
     fullName: address?.full_name || '',
@@ -102,14 +104,14 @@ const Cart = () => {
         phone: user.user_metadata?.phone || user.phone || '',
       });
       try {
-        await loadAddresses(user.id);
+        await loadAddresses(currentUserId);
       } catch (err) {
         setAddressActionError(err.message || 'Unable to load addresses.');
       }
     };
 
     fetchProfile();
-  }, [user]);
+  }, [user, currentUserId]);
 
   const handleAddressChange = (e) => {
     const { name, value } = e.target;
@@ -161,7 +163,7 @@ const Cart = () => {
   const handleSaveAddress = async () => {
     setAddressActionError('');
 
-    if (!user?.id) {
+    if (!currentUserId) {
       setAddressActionError('Please sign in to save your address.');
       return;
     }
@@ -186,7 +188,7 @@ const Cart = () => {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          userId: user.id,
+          userId: currentUserId,
           addressId: editingAddressId || null,
           fullName: addressForm.fullName.trim(),
           phone: addressForm.phone.trim(),
@@ -208,7 +210,7 @@ const Cart = () => {
       setShowAddressForm(false);
       setEditingAddressId('');
       setSelectedAddressId(data.id || '');
-      await loadAddresses(user.id);
+      await loadAddresses(currentUserId);
     } catch (err) {
       setAddressActionError(err.message || 'Unable to save address.');
     } finally {
@@ -219,7 +221,7 @@ const Cart = () => {
   const handleSetDefault = async (addressId) => {
     setAddressActionError('');
 
-    if (!user?.id || !addressId) {
+    if (!currentUserId || !addressId) {
       setAddressActionError('Invalid address selection.');
       return;
     }
@@ -228,7 +230,7 @@ const Cart = () => {
       const response = await fetch('/api/address/set-default', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId: user.id, addressId }),
+        body: JSON.stringify({ userId: currentUserId, addressId }),
       });
       const data = await response.json();
 
@@ -237,7 +239,7 @@ const Cart = () => {
       }
 
       setSelectedAddressId(addressId);
-      await loadAddresses(user.id);
+      await loadAddresses(currentUserId);
     } catch (err) {
       setAddressActionError(err.message || 'Unable to update default address.');
     }
@@ -246,7 +248,7 @@ const Cart = () => {
   const handleDeleteAddress = async (addressId) => {
     setAddressActionError('');
 
-    if (!user?.id || !addressId) {
+    if (!currentUserId || !addressId) {
       setAddressActionError('Invalid address selection.');
       return;
     }
@@ -255,7 +257,7 @@ const Cart = () => {
       const response = await fetch('/api/address/delete', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId: user.id, addressId }),
+        body: JSON.stringify({ userId: currentUserId, addressId }),
       });
       const data = await response.json();
 
@@ -266,7 +268,7 @@ const Cart = () => {
       if (selectedAddressId === addressId) {
         setSelectedAddressId('');
       }
-      await loadAddresses(user.id);
+      await loadAddresses(currentUserId);
     } catch (err) {
       setAddressActionError(err.message || 'Unable to delete address.');
     }

@@ -1,4 +1,4 @@
-import { getPool } from './_db.js';
+import { ensureAddressesTable, getPool } from './_db.js';
 
 export default async function handler(req, res) {
   if (req.method !== 'GET') {
@@ -12,6 +12,7 @@ export default async function handler(req, res) {
   }
 
   try {
+    await ensureAddressesTable();
     const pool = getPool();
     const result = await pool.query(
       `SELECT id, user_id, full_name, phone, address_line1, address_line2, city, state, postal_code, country, is_default, created_at
@@ -23,6 +24,6 @@ export default async function handler(req, res) {
 
     return res.status(200).json(result.rows);
   } catch (error) {
-    return res.status(500).json({ error: 'Failed to load addresses' });
+    return res.status(500).json({ error: error.message || 'Failed to load addresses' });
   }
 }

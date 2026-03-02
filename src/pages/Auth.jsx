@@ -42,7 +42,7 @@ const Auth = () => {
     try {
       if (isLogin) {
         // TODO: Replace with Neon/pg login logic
-        setUser({ email: formData.email });
+        setUser({ id: formData.email, email: formData.email });
         setSession({});
         navigate('/');
       } else {

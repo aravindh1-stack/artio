@@ -1,4 +1,4 @@
-import { getPool } from '../_db.js';
+import { ensureAddressesTable, getPool } from '../_db.js';
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
@@ -11,6 +11,7 @@ export default async function handler(req, res) {
     return res.status(400).json({ error: 'userId and addressId are required' });
   }
 
+  await ensureAddressesTable();
   const pool = getPool();
   const client = await pool.connect();
 
@@ -34,7 +35,7 @@ export default async function handler(req, res) {
     return res.status(200).json(result.rows[0]);
   } catch (error) {
     await client.query('ROLLBACK');
-    return res.status(500).json({ error: 'Failed to set default address' });
+    return res.status(500).json({ error: error.message || 'Failed to set default address' });
   } finally {
     client.release();
   }

@@ -1,4 +1,4 @@
-import { getPool } from '../_db.js';
+import { ensureAddressesTable, getPool } from '../_db.js';
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
@@ -24,6 +24,7 @@ export default async function handler(req, res) {
     return res.status(400).json({ error: 'Missing required address fields' });
   }
 
+  await ensureAddressesTable();
   const pool = getPool();
   const client = await pool.connect();
 
@@ -93,7 +94,7 @@ export default async function handler(req, res) {
     return res.status(addressId ? 200 : 201).json(result.rows[0]);
   } catch (error) {
     await client.query('ROLLBACK');
-    return res.status(500).json({ error: 'Failed to save address' });
+    return res.status(500).json({ error: error.message || 'Failed to save address' });
   } finally {
     client.release();
   }
