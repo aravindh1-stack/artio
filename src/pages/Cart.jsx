@@ -226,6 +226,17 @@ const Cart = () => {
         throw new Error(data.error || 'Unable to save address.');
       }
 
+      await fetch('/api/profile/upsert', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userId: currentUserId,
+          email: user?.email || `${currentUserId}@local.artio`,
+          fullName: addressForm.fullName.trim(),
+          phone: addressForm.phone.trim(),
+        }),
+      });
+
       setShowAddressForm(false);
       setEditingAddressId('');
       setSelectedAddressId(data.id || '');

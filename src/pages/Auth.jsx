@@ -48,6 +48,18 @@ const Auth = () => {
         if (!existingUuid) {
           localStorage.setItem(storageKey, userUuid);
         }
+
+        await fetch('/api/profile/upsert', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            userId: userUuid,
+            email: formData.email,
+            fullName: '',
+            phone: '',
+          }),
+        });
+
         setUser({ id: userUuid, email: formData.email });
         setSession({});
         navigate('/');
@@ -58,6 +70,13 @@ const Auth = () => {
 
         if (!formData.phone.trim()) {
           throw new Error('Phone number is required');
+        }
+
+        const storageKey = `artio_user_uuid_${formData.email}`;
+        const existingUuid = localStorage.getItem(storageKey);
+        const userUuid = existingUuid || crypto.randomUUID();
+        if (!existingUuid) {
+          localStorage.setItem(storageKey, userUuid);
         }
 
         if (formData.password !== formData.confirmPassword) {
@@ -97,6 +116,17 @@ const Auth = () => {
           templateParams,
           'YOUR_PUBLIC_KEY'   // Replace with your Public Key
         );
+
+        await fetch('/api/profile/upsert', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            userId: userUuid,
+            email: formData.email,
+            fullName: formData.fullName.trim(),
+            phone: formData.phone.trim(),
+          }),
+        });
 
         setInfo('Signup successful! Please check your email to verify your account.');
         setError('');
