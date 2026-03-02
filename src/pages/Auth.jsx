@@ -27,6 +27,7 @@ const Auth = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const setUser = useAuthStore((state) => state.setUser);
   const setSession = useAuthStore((state) => state.setSession);
+  const fetchProfile = useAuthStore((state) => state.fetchProfile);
 
   useEffect(() => {
     const mode = searchParams.get('mode');
@@ -60,8 +61,11 @@ const Auth = () => {
           }),
         });
 
-        setUser({ id: userUuid, email: formData.email });
+        const nextUser = { id: userUuid, email: formData.email };
+        localStorage.setItem('artio-auth-user', JSON.stringify(nextUser));
+        setUser(nextUser);
         setSession({});
+        await fetchProfile(nextUser);
         navigate('/');
       } else {
         if (!formData.fullName.trim()) {
@@ -127,6 +131,13 @@ const Auth = () => {
             phone: formData.phone.trim(),
           }),
         });
+
+        const nextUser = { id: userUuid, email: formData.email };
+        localStorage.setItem('artio-auth-user', JSON.stringify(nextUser));
+        setUser(nextUser);
+        setSession({});
+        await fetchProfile(nextUser);
+        navigate('/');
 
         setInfo('Signup successful! Please check your email to verify your account.');
         setError('');

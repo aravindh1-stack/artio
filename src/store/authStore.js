@@ -18,20 +18,40 @@ export const useAuthStore = create((set, get) => ({
       set({ profile: null, role: 'user' });
       return;
     }
-    // TODO: Replace with Neon/pg query
-    set({ profile: { id: user.id, email: user.email, full_name: '', phone: '', role: 'user' }, role: 'user' });
+
+    try {
+      const params = new URLSearchParams();
+      if (user.id) {
+        params.set('userId', user.id);
+      }
+      if (user.email) {
+        params.set('email', user.email);
+      }
+
+      const response = await fetch(`/api/profile/get?${params.toString()}`);
+      if (!response.ok) {
+        throw new Error('Profile fetch failed');
+      }
+
+      const profile = await response.json();
+      set({ profile, role: profile?.role ?? 'user' });
+    } catch {
+      set({ profile: { id: user.id, email: user.email, full_name: '', phone: '', role: 'user' }, role: 'user' });
+    }
   },
 
   initialize: async () => {
     set({ loading: true });
-    // TODO: Replace with Neon/pg auth logic
-    set({ session: null, user: null });
-    await get().fetchProfile(null);
+    const storedUserRaw = localStorage.getItem('artio-auth-user');
+    const storedUser = storedUserRaw ? JSON.parse(storedUserRaw) : null;
+    set({ session: storedUser ? {} : null, user: storedUser });
+    await get().fetchProfile(storedUser);
     set({ loading: false });
   },
 
   signOut: async () => {
     // TODO: Replace with Neon/pg sign out logic
+    localStorage.removeItem('artio-auth-user');
     set({ user: null, session: null, profile: null, role: 'user' });
   },
 }));
