@@ -27,6 +27,15 @@ async function addWatermarkToImage(file, watermarkText) {
     img.src = URL.createObjectURL(file);
   });
 }
+
+async function fileToDataUrl(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result);
+    reader.onerror = () => reject(new Error('Failed to read file'));
+    reader.readAsDataURL(file);
+  });
+}
 import { useEffect, useState } from 'react';
 import Card from '../components/ui/Card';
 import Button from '../components/ui/Button';
@@ -597,12 +606,15 @@ const Admin = () => {
                 const file = e.target.files[0];
                 if (!file) return;
                 setUploading(true);
-                // TODO: Implement Neon/pg logic for image upload
-                setTimeout(() => {
+                try {
+                  const dataUrl = await fileToDataUrl(file);
                   setProductImageFiles([file]);
-                  setProductForm(prev => ({ ...prev, image_path: file.name }));
+                  setProductForm((prev) => ({ ...prev, image_path: dataUrl }));
+                } catch {
+                  alert('Failed to process image file.');
+                } finally {
                   setUploading(false);
-                }, 1000);
+                }
               }}
             />
             {uploading && (
@@ -692,8 +704,15 @@ const Admin = () => {
               onChange={async (e) => {
                 const file = e.target.files[0];
                 if (!file) return;
-                // TODO: Implement Neon/pg logic for image upload
-                setCategoryForm(prev => ({ ...prev, image_path: file.name }));
+                setUploading(true);
+                try {
+                  const dataUrl = await fileToDataUrl(file);
+                  setCategoryForm((prev) => ({ ...prev, image_path: dataUrl }));
+                } catch {
+                  alert('Failed to process image file.');
+                } finally {
+                  setUploading(false);
+                }
               }}
             />
             {categoryForm.image_path && (

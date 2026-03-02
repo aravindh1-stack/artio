@@ -84,7 +84,12 @@ const Store = () => {
 
   const getImageSrc = (value) => {
     if (!value) return '/placeholder.svg';
-    if (value.startsWith('http://') || value.startsWith('https://') || value.startsWith('/')) {
+    if (
+      value.startsWith('http://') ||
+      value.startsWith('https://') ||
+      value.startsWith('/') ||
+      value.startsWith('data:')
+    ) {
       return value;
     }
     return `/${value}`;
