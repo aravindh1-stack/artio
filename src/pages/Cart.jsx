@@ -343,9 +343,32 @@ const Cart = () => {
       setPlacingOrder(true);
 
       try {
-        // TODO: Replace with Neon fetch
-        // Placeholder: fetch('/api/order', { ...order details })
-        setOrderId('mockOrderId');
+        const response = await fetch('/api/orders/checkout', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            userId: currentUserId,
+            items,
+            shippingAddress: {
+              full_name: selectedAddress.fullName,
+              phone: selectedAddress.phone,
+              address_line1: selectedAddress.line1,
+              address_line2: selectedAddress.line2,
+              city: selectedAddress.city,
+              state: selectedAddress.state,
+              postal_code: selectedAddress.postalCode,
+              country: selectedAddress.country,
+            },
+            totalAmount: totalWithTax,
+          }),
+        });
+
+        const data = await response.json();
+        if (!response.ok) {
+          throw new Error(data.error || 'Order failed. Please try again.');
+        }
+
+        setOrderId(data.id);
         setOrderSummary(items.map((item) => ({
           name: item.name,
           quantity: item.quantity,

@@ -25,14 +25,15 @@ const Orders = () => {
       if (!user) return;
       
       try {
-        // Inga unga Neon API call varum
-        // const response = await fetch(`/api/orders?userId=${user.id}`);
-        // const data = await response.json();
-        // setOrders(data);
-        
-        setOrders([]); // Ippo current-ah placeholder
+        const userId = user.id || user.email;
+        const response = await fetch(`/api/orders?userId=${encodeURIComponent(userId)}`);
+        const data = await response.json();
+        if (!response.ok) {
+          throw new Error(data.error || 'Failed to load orders');
+        }
+        setOrders(Array.isArray(data) ? data : []);
       } catch (err) {
-        setError('Orders fetch panna mudiyala. Check connection.');
+        setError(err.message || 'Orders fetch panna mudiyala. Check connection.');
       }
     };
     fetchOrders();

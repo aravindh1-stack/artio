@@ -20,7 +20,7 @@ const Store = () => {
 
   useEffect(() => {
     fetchCategories();
-  }, [searchParams]);
+  }, []);
 
   useEffect(() => {
     const categorySlug = searchParams.get('category');
@@ -55,59 +55,39 @@ const Store = () => {
     };
   }, []);
 
-  // Mock fetch for categories
   const fetchCategories = async () => {
-    // Use placeholder images that exist in public/
-    const mockCategories = [
-      { id: 1, name: 'Abstract', slug: 'abstract', image_path: 'vite.svg', display_order: 1 },
-      { id: 2, name: 'Nature', slug: 'nature', image_path: 'icon-192.png', display_order: 2 },
-      { id: 3, name: 'Urban', slug: 'urban', image_path: 'icon-512.png', display_order: 3 },
-    ];
-    setCategories(mockCategories);
+    try {
+      const response = await fetch('/api/categories');
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to load categories');
+      }
+      setCategories(Array.isArray(data) ? data : []);
+    } catch {
+      setCategories([]);
+    }
   };
 
-  // Mock fetch for products
   const fetchProducts = async () => {
-    // Use placeholder images that exist in public/
-    const mockProducts = [
-      {
-        id: 1,
-        name: 'Redefined Poster 1',
-        description: 'Premium museum-quality print for your space.',
-        price: 49.99,
-        image_path: 'vite.svg',
-        categories: { name: 'Abstract', slug: 'abstract' },
-        stock_quantity: 10,
-        dimensions: '24x36 in',
-        is_active: true,
-      },
-      {
-        id: 2,
-        name: 'Redefined Poster 2',
-        description: 'Bring nature indoors with this stunning piece.',
-        price: 59.99,
-        image_path: 'icon-192.png',
-        categories: { name: 'Nature', slug: 'nature' },
-        stock_quantity: 5,
-        dimensions: '18x24 in',
-        is_active: true,
-      },
-      {
-        id: 3,
-        name: 'Redefined Poster 3',
-        description: 'Urban vibes for modern interiors.',
-        price: 39.99,
-        image_path: 'icon-512.png',
-        categories: { name: 'Urban', slug: 'urban' },
-        stock_quantity: 8,
-        dimensions: '20x30 in',
-        is_active: true,
-      },
-    ];
-    const filtered = selectedCategoryId
-      ? mockProducts.filter((p) => categories.find((c) => c.id === selectedCategoryId && c.name === p.categories.name))
-      : mockProducts;
-    setProducts(filtered);
+    try {
+      const query = selectedCategoryId ? `?categoryId=${encodeURIComponent(selectedCategoryId)}` : '';
+      const response = await fetch(`/api/products${query}`);
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to load products');
+      }
+      setProducts(Array.isArray(data) ? data : []);
+    } catch {
+      setProducts([]);
+    }
+  };
+
+  const getImageSrc = (value) => {
+    if (!value) return '/placeholder.svg';
+    if (value.startsWith('http://') || value.startsWith('https://') || value.startsWith('/')) {
+      return value;
+    }
+    return `/${value}`;
   };
 
   const handleAddToCart = (product) => {
@@ -180,7 +160,7 @@ const Store = () => {
               >
                 {category.image_path && (
                   <img
-                    src={`/gallery/${category.image_path}`}
+                    src={getImageSrc(category.image_path)}
                     alt={category.name}
                     className="w-6 h-6 object-cover rounded-full border border-gray-300 dark:border-gray-700"
                   />
@@ -212,11 +192,7 @@ const Store = () => {
                   <Card className="group h-full flex flex-col">
                     <div className="relative aspect-[3/4] overflow-hidden artio-no-select">
                       <img
-                        src={
-                          product.image_path
-                            ? `/gallery/${product.image_path}`
-                            : '/placeholder.png'
-                        }
+                        src={getImageSrc(product.image_path)}
                         alt={product.name}
                         className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
                         draggable={false}
@@ -277,11 +253,7 @@ const Store = () => {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
             <div className="relative aspect-[3/4] rounded-lg overflow-hidden artio-no-select">
               <img
-                src={
-                  quickViewProduct.image_path
-                    ? `/gallery/${quickViewProduct.image_path}`
-                    : '/placeholder.png'
-                }
+                src={getImageSrc(quickViewProduct.image_path)}
                 alt={quickViewProduct.name}
                 className="w-full h-full object-cover"
                 draggable={false}
