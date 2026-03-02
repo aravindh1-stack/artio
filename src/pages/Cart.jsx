@@ -49,7 +49,26 @@ const Cart = () => {
     email: 'payments@example.com',
   };
 
-  const currentUserId = user?.id || user?.email || '';
+  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+  const resolveUserId = () => {
+    const directId = user?.id || '';
+    if (uuidRegex.test(directId)) {
+      return directId;
+    }
+
+    const identity = user?.email || 'guest';
+    const storageKey = `artio_user_uuid_${identity}`;
+    const stored = localStorage.getItem(storageKey);
+    if (stored && uuidRegex.test(stored)) {
+      return stored;
+    }
+
+    const created = crypto.randomUUID();
+    localStorage.setItem(storageKey, created);
+    return created;
+  };
+
+  const currentUserId = user ? resolveUserId() : '';
 
   const mapAddress = (address) => ({
     id: address?.id ?? '',

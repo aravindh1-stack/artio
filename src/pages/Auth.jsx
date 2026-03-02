@@ -42,7 +42,13 @@ const Auth = () => {
     try {
       if (isLogin) {
         // TODO: Replace with Neon/pg login logic
-        setUser({ id: formData.email, email: formData.email });
+        const storageKey = `artio_user_uuid_${formData.email}`;
+        const existingUuid = localStorage.getItem(storageKey);
+        const userUuid = existingUuid || crypto.randomUUID();
+        if (!existingUuid) {
+          localStorage.setItem(storageKey, userUuid);
+        }
+        setUser({ id: userUuid, email: formData.email });
         setSession({});
         navigate('/');
       } else {
