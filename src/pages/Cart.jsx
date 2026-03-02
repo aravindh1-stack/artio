@@ -50,25 +50,43 @@ const Cart = () => {
   };
 
   const mapAddress = (address) => ({
-    id: address.id,
-    fullName: address.full_name || '',
-    phone: address.phone || '',
-    line1: address.address_line1 || '',
-    line2: address.address_line2 || '',
-    city: address.city || '',
-    state: address.state || '',
-    postalCode: address.postal_code || '',
-    country: address.country || '',
-    isDefault: Boolean(address.is_default),
+    id: address?.id ?? '',
+    fullName: address?.full_name || '',
+    phone: address?.phone || '',
+    line1: address?.address_line1 || '',
+    line2: address?.address_line2 || '',
+    city: address?.city || '',
+    state: address?.state || '',
+    postalCode: address?.postal_code || '',
+    country: address?.country || '',
+    isDefault: Boolean(address?.is_default),
   });
 
   const loadAddresses = async (userId) => {
-    // TODO: Replace with Neon fetch
-    // Placeholder: fetch('/api/addresses?userId=' + userId)
-    const mockAddresses = [];
-    setAddresses(mockAddresses);
-    setSelectedAddressId(mockAddresses[0]?.id || '');
-    if (mockAddresses.length === 0) {
+    if (!userId) {
+      setAddresses([]);
+      setSelectedAddressId('');
+      setShowAddressForm(true);
+      setSetDefaultOnSave(true);
+      return;
+    }
+
+    const response = await fetch(`/api/addresses?userId=${encodeURIComponent(userId)}`);
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(data.error || 'Unable to load addresses.');
+    }
+
+    const mapped = Array.isArray(data) ? data.map(mapAddress).filter((address) => address.id) : [];
+    setAddresses(mapped);
+    setSelectedAddressId((currentId) => {
+      if (currentId && mapped.some((address) => address.id === currentId)) {
+        return currentId;
+      }
+      return mapped[0]?.id || '';
+    });
+    if (mapped.length === 0) {
       setShowAddressForm(true);
       setSetDefaultOnSave(true);
     }
@@ -78,10 +96,16 @@ const Cart = () => {
     const fetchProfile = async () => {
       if (!user) return;
 
-      // TODO: Replace with Neon fetch
-      // Placeholder: fetch('/api/profile?userId=' + user.id)
-      setProfileData({ fullName: 'John Doe', phone: '1234567890' });
-      await loadAddresses(user.id);
+      setAddressActionError('');
+      setProfileData({
+        fullName: user.user_metadata?.full_name || user.full_name || '',
+        phone: user.user_metadata?.phone || user.phone || '',
+      });
+      try {
+        await loadAddresses(user.id);
+      } catch (err) {
+        setAddressActionError(err.message || 'Unable to load addresses.');
+      }
     };
 
     fetchProfile();
@@ -137,6 +161,11 @@ const Cart = () => {
   const handleSaveAddress = async () => {
     setAddressActionError('');
 
+    if (!user?.id) {
+      setAddressActionError('Please sign in to save your address.');
+      return;
+    }
+
     if (
       !addressForm.fullName.trim() ||
       !addressForm.phone.trim() ||
@@ -153,11 +182,32 @@ const Cart = () => {
     setIsSavingAddress(true);
 
     try {
-      // TODO: Replace with Neon fetch
-      // Placeholder: fetch('/api/address/save', { ...addressForm })
+      const response = await fetch('/api/address/save', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userId: user.id,
+          addressId: editingAddressId || null,
+          fullName: addressForm.fullName.trim(),
+          phone: addressForm.phone.trim(),
+          line1: addressForm.line1.trim(),
+          line2: addressForm.line2.trim(),
+          city: addressForm.city.trim(),
+          state: addressForm.state.trim(),
+          postalCode: addressForm.postalCode.trim(),
+          country: addressForm.country.trim(),
+          isDefault: setDefaultOnSave || addresses.length === 0,
+        }),
+      });
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Unable to save address.');
+      }
+
       setShowAddressForm(false);
       setEditingAddressId('');
-      setSelectedAddressId('mockId');
+      setSelectedAddressId(data.id || '');
       await loadAddresses(user.id);
     } catch (err) {
       setAddressActionError(err.message || 'Unable to save address.');
@@ -169,9 +219,23 @@ const Cart = () => {
   const handleSetDefault = async (addressId) => {
     setAddressActionError('');
 
+    if (!user?.id || !addressId) {
+      setAddressActionError('Invalid address selection.');
+      return;
+    }
+
     try {
-      // TODO: Replace with Neon fetch
-      // Placeholder: fetch('/api/address/set-default', { addressId })
+      const response = await fetch('/api/address/set-default', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId: user.id, addressId }),
+      });
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Unable to update default address.');
+      }
+
       setSelectedAddressId(addressId);
       await loadAddresses(user.id);
     } catch (err) {
@@ -182,9 +246,23 @@ const Cart = () => {
   const handleDeleteAddress = async (addressId) => {
     setAddressActionError('');
 
+    if (!user?.id || !addressId) {
+      setAddressActionError('Invalid address selection.');
+      return;
+    }
+
     try {
-      // TODO: Replace with Neon fetch
-      // Placeholder: fetch('/api/address/delete', { addressId })
+      const response = await fetch('/api/address/delete', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId: user.id, addressId }),
+      });
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Unable to delete address.');
+      }
+
       if (selectedAddressId === addressId) {
         setSelectedAddressId('');
       }
@@ -475,9 +553,9 @@ const Cart = () => {
                   <div className="space-y-4">
                     {addresses.map((address) => (
                       <div
-                        key={address?.id ?? Math.random()}
+                        key={address.id}
                         className={`p-4 rounded-lg border ${
-                          selectedAddressId === (address?.id ?? '')
+                          selectedAddressId === address.id
                             ? 'border-black dark:border-white'
                             : 'border-gray-200 dark:border-gray-800'
                         }`}
@@ -486,24 +564,24 @@ const Cart = () => {
                           <input
                             type="radio"
                             name="selectedAddress"
-                            checked={selectedAddressId === (address?.id ?? '')}
-                            onChange={() => setSelectedAddressId(address?.id ?? '')}
+                            checked={selectedAddressId === address.id}
+                            onChange={() => setSelectedAddressId(address.id)}
                           />
                           <div className="flex-1">
-                            <p className="font-semibold">{address?.fullName ?? ''}</p>
+                            <p className="font-semibold">{address.fullName}</p>
                             <p className="text-sm text-gray-600 dark:text-gray-400">
-                              {address?.phone ?? ''}
+                              {address.phone}
                             </p>
                             <p className="text-sm text-gray-600 dark:text-gray-400">
-                              {address?.line1 ?? ''} {address?.line2 ?? ''}
+                              {address.line1} {address.line2}
                             </p>
                             <p className="text-sm text-gray-600 dark:text-gray-400">
-                              {address?.city ?? ''}, {address?.state ?? ''} {address?.postalCode ?? ''}
+                              {address.city}, {address.state} {address.postalCode}
                             </p>
                             <p className="text-sm text-gray-600 dark:text-gray-400">
-                              {address?.country ?? ''}
+                              {address.country}
                             </p>
-                            {address?.isDefault && (
+                            {address.isDefault && (
                               <span className="text-xs text-gray-500 dark:text-gray-400">Default</span>
                             )}
                           </div>
@@ -516,10 +594,10 @@ const Cart = () => {
                           >
                             Edit
                           </Button>
-                          {!address?.isDefault && (
+                          {!address.isDefault && (
                             <button
                               type="button"
-                              onClick={() => handleSetDefault(address?.id ?? '')}
+                              onClick={() => handleSetDefault(address.id)}
                               className="text-sm text-gray-600 dark:text-gray-400 hover:text-black dark:hover:text-white"
                             >
                               Set default
@@ -527,7 +605,7 @@ const Cart = () => {
                           )}
                           <button
                             type="button"
-                            onClick={() => handleDeleteAddress(address?.id ?? '')}
+                            onClick={() => handleDeleteAddress(address.id)}
                             className="text-sm text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300"
                           >
                             Remove

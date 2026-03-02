@@ -1,6 +1,9 @@
+import express from 'express';
+import addressApi from './addressApi.js';
 // ...existing code...
 const app = express();
 app.use(express.json());
+app.use('/api/address', addressApi);
 
 import express from 'express';
 import { pool } from './db.js';
