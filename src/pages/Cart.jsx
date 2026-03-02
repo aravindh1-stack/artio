@@ -343,7 +343,7 @@ const Cart = () => {
       setPlacingOrder(true);
 
       try {
-        const response = await fetch('/api/orders/checkout', {
+        const response = await fetch('/api/admin/orders', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({

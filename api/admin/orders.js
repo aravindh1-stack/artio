@@ -1,4 +1,4 @@
-import { ensureAdminSchema, getPool } from '../_db.js';
+import { ensureAdminSchema, getPool, normalizeUserId } from '../_db.js';
 
 export default async function handler(req, res) {
   const pool = getPool();
@@ -6,10 +6,18 @@ export default async function handler(req, res) {
   try {
     await ensureAdminSchema();
     if (req.method === 'GET') {
+      const userId = normalizeUserId(req.query.userId);
+
       const ordersResult = await pool.query(
-        `SELECT id, user_id, status, payment_status, total_amount, shipping_address, created_at
-         FROM orders
-         ORDER BY created_at DESC`
+        userId
+          ? `SELECT id, user_id, status, payment_status, total_amount, shipping_address, created_at
+             FROM orders
+             WHERE user_id = $1
+             ORDER BY created_at DESC`
+          : `SELECT id, user_id, status, payment_status, total_amount, shipping_address, created_at
+             FROM orders
+             ORDER BY created_at DESC`,
+        userId ? [userId] : []
       );
 
       const itemsResult = await pool.query(
@@ -46,6 +54,53 @@ export default async function handler(req, res) {
       return res.status(200).json(orders);
     }
 
+    if (req.method === 'POST') {
+      const { userId: rawUserId, items = [], shippingAddress, totalAmount } = req.body ?? {};
+      const userId = normalizeUserId(rawUserId);
+
+      if (!userId || !Array.isArray(items) || items.length === 0 || !shippingAddress) {
+        return res.status(400).json({ error: 'Invalid checkout payload' });
+      }
+
+      const client = await pool.connect();
+      try {
+        await client.query('BEGIN');
+
+        const orderResult = await client.query(
+          `INSERT INTO orders (user_id, status, payment_status, total_amount, shipping_address, updated_at)
+           VALUES ($1, 'pending', 'unpaid', $2, $3::jsonb, now())
+           RETURNING id, user_id, status, payment_status, total_amount, shipping_address, created_at`,
+          [userId, totalAmount, JSON.stringify(shippingAddress)]
+        );
+
+        const order = orderResult.rows[0];
+
+        for (const item of items) {
+          await client.query(
+            `INSERT INTO order_items (order_id, product_id, quantity, price_at_purchase)
+             VALUES ($1, $2, $3, $4)`,
+            [order.id, item.id, item.quantity, item.price]
+          );
+
+          await client.query(
+            `UPDATE products
+             SET stock_quantity = GREATEST(stock_quantity - $1, 0),
+                 updated_at = now()
+             WHERE id = $2`,
+            [item.quantity, item.id]
+          );
+        }
+
+        await client.query('COMMIT');
+        return res.status(201).json(order);
+      } catch (error) {
+        await client.query('ROLLBACK');
+        return res.status(500).json({ error: error.message || 'Checkout failed' });
+      } finally {
+        client.release();
+      }
+    }
+
     if (req.method === 'PATCH') {
       const { orderId, status, payment_status } = req.body ?? {};
       if (!orderId) {
@@ -73,7 +128,7 @@ export default async function handler(req, res) {
       return res.status(200).json(result.rows[0]);
     }
 
-    res.setHeader('Allow', ['GET', 'PATCH']);
+    res.setHeader('Allow', ['GET', 'POST', 'PATCH']);
     return res.status(405).json({ error: 'Method not allowed' });
   } catch (error) {
     return res.status(500).json({ error: error.message || 'Orders API failed' });

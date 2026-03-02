@@ -26,7 +26,7 @@ const Orders = () => {
       
       try {
         const userId = user.id || user.email;
-        const response = await fetch(`/api/orders?userId=${encodeURIComponent(userId)}`);
+        const response = await fetch(`/api/admin/orders?userId=${encodeURIComponent(userId)}`);
         const data = await response.json();
         if (!response.ok) {
           throw new Error(data.error || 'Failed to load orders');

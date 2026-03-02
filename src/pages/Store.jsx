@@ -57,7 +57,7 @@ const Store = () => {
 
   const fetchCategories = async () => {
     try {
-      const response = await fetch('/api/categories');
+      const response = await fetch('/api/admin/categories');
       const data = await response.json();
       if (!response.ok) {
         throw new Error(data.error || 'Failed to load categories');
@@ -71,7 +71,7 @@ const Store = () => {
   const fetchProducts = async () => {
     try {
       const query = selectedCategoryId ? `?categoryId=${encodeURIComponent(selectedCategoryId)}` : '';
-      const response = await fetch(`/api/products${query}`);
+      const response = await fetch(`/api/admin/products${query}`);
       const data = await response.json();
       if (!response.ok) {
         throw new Error(data.error || 'Failed to load products');
