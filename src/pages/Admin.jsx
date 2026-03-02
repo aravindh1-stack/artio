@@ -36,6 +36,8 @@ async function fileToDataUrl(file) {
     reader.readAsDataURL(file);
   });
 }
+
+const isDataUrlImage = (value) => typeof value === 'string' && value.startsWith('data:image/');
 import { useEffect, useState } from 'react';
 import Card from '../components/ui/Card';
 import Button from '../components/ui/Button';
@@ -621,7 +623,20 @@ const Admin = () => {
               <span className="text-xs text-primary mt-1">Uploading image...</span>
             )}
             {productForm.image_path && !uploading && (
-              <span className="text-xs text-gray-500 mt-1 break-all">{productForm.image_path}</span>
+              <div className="mt-2 flex items-center gap-2">
+                {isDataUrlImage(productForm.image_path) ? (
+                  <>
+                    <img
+                      src={productForm.image_path}
+                      alt="Product preview"
+                      className="w-10 h-10 rounded border border-gray-200 dark:border-gray-700 object-cover"
+                    />
+                    <span className="text-xs text-gray-500">Image embedded and ready to save</span>
+                  </>
+                ) : (
+                  <span className="text-xs text-gray-500 break-all">{productForm.image_path}</span>
+                )}
+              </div>
             )}
           </div>
           <Input
@@ -716,7 +731,20 @@ const Admin = () => {
               }}
             />
             {categoryForm.image_path && (
-              <span className="text-xs text-gray-500 mt-1 break-all">{categoryForm.image_path}</span>
+              <div className="mt-2 flex items-center gap-2">
+                {isDataUrlImage(categoryForm.image_path) ? (
+                  <>
+                    <img
+                      src={categoryForm.image_path}
+                      alt="Category preview"
+                      className="w-10 h-10 rounded border border-gray-200 dark:border-gray-700 object-cover"
+                    />
+                    <span className="text-xs text-gray-500">Image embedded and ready to save</span>
+                  </>
+                ) : (
+                  <span className="text-xs text-gray-500 break-all">{categoryForm.image_path}</span>
+                )}
+              </div>
             )}
           </div>
           <Input
