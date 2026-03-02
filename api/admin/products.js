@@ -1,5 +1,25 @@
 import { ensureAdminSchema, getPool } from '../_db.js';
 
+const isProbablyRawBase64 = (value) =>
+  typeof value === 'string' && value.length > 120 && !value.includes(' ') && /^[A-Za-z0-9+/=]+$/.test(value);
+
+const normalizeImageValue = (value) => {
+  if (!value || typeof value !== 'string') {
+    return '';
+  }
+
+  const trimmed = value.trim();
+  if (trimmed.startsWith('data:image/')) {
+    return trimmed;
+  }
+
+  if (isProbablyRawBase64(trimmed)) {
+    return `data:image/jpeg;base64,${trimmed}`;
+  }
+
+  return trimmed;
+};
+
 const mapProduct = (row) => ({
   id: row.id,
   category_id: row.category_id,
@@ -7,7 +27,7 @@ const mapProduct = (row) => ({
   slug: row.slug,
   description: row.description,
   price: row.price,
-  image_path: row.image_url || row.image_path || '',
+  image_path: normalizeImageValue(row.image_url || row.image_path || ''),
   preview_image_url: row.preview_image_url || '',
   full_image_path: row.full_image_path || '',
   dimensions: row.dimensions || '',
@@ -47,7 +67,7 @@ export default async function handler(req, res) {
           payload.slug,
           payload.description || '',
           payload.price || 0,
-          payload.image_path || payload.image_url || '',
+          normalizeImageValue(payload.image_path || payload.image_url || ''),
           payload.preview_image_url || '',
           payload.full_image_path || '',
           payload.dimensions || '',
@@ -88,7 +108,7 @@ export default async function handler(req, res) {
           payload.slug,
           payload.description || '',
           payload.price || 0,
-          payload.image_path || payload.image_url || '',
+          normalizeImageValue(payload.image_path || payload.image_url || ''),
           payload.preview_image_url || '',
           payload.full_image_path || '',
           payload.dimensions || '',

@@ -38,6 +38,25 @@ async function fileToDataUrl(file) {
 }
 
 const isDataUrlImage = (value) => typeof value === 'string' && value.startsWith('data:image/');
+const isProbablyRawBase64 = (value) =>
+  typeof value === 'string' && value.length > 120 && !value.includes(' ') && /^[A-Za-z0-9+/=]+$/.test(value);
+const toRenderableImageSrc = (value) => {
+  if (!value || typeof value !== 'string') {
+    return '';
+  }
+
+  const trimmed = value.trim();
+  if (trimmed.startsWith('data:image/')) {
+    return trimmed;
+  }
+  if (isProbablyRawBase64(trimmed)) {
+    return `data:image/jpeg;base64,${trimmed}`;
+  }
+  if (trimmed.startsWith('http://') || trimmed.startsWith('https://') || trimmed.startsWith('/')) {
+    return trimmed;
+  }
+  return `/${trimmed}`;
+};
 import { useEffect, useState } from 'react';
 import Card from '../components/ui/Card';
 import Button from '../components/ui/Button';
@@ -624,17 +643,17 @@ const Admin = () => {
             )}
             {productForm.image_path && !uploading && (
               <div className="mt-2 flex items-center gap-2">
-                {isDataUrlImage(productForm.image_path) ? (
+                {toRenderableImageSrc(productForm.image_path) ? (
                   <>
                     <img
-                      src={productForm.image_path}
+                      src={toRenderableImageSrc(productForm.image_path)}
                       alt="Product preview"
                       className="w-10 h-10 rounded border border-gray-200 dark:border-gray-700 object-cover"
                     />
-                    <span className="text-xs text-gray-500">Image embedded and ready to save</span>
+                    <span className="text-xs text-gray-500">Image ready to save</span>
                   </>
                 ) : (
-                  <span className="text-xs text-gray-500 break-all">{productForm.image_path}</span>
+                  <span className="text-xs text-gray-500">Image value attached</span>
                 )}
               </div>
             )}
@@ -732,17 +751,17 @@ const Admin = () => {
             />
             {categoryForm.image_path && (
               <div className="mt-2 flex items-center gap-2">
-                {isDataUrlImage(categoryForm.image_path) ? (
+                {toRenderableImageSrc(categoryForm.image_path) ? (
                   <>
                     <img
-                      src={categoryForm.image_path}
+                      src={toRenderableImageSrc(categoryForm.image_path)}
                       alt="Category preview"
                       className="w-10 h-10 rounded border border-gray-200 dark:border-gray-700 object-cover"
                     />
-                    <span className="text-xs text-gray-500">Image embedded and ready to save</span>
+                    <span className="text-xs text-gray-500">Image ready to save</span>
                   </>
                 ) : (
-                  <span className="text-xs text-gray-500 break-all">{categoryForm.image_path}</span>
+                  <span className="text-xs text-gray-500">Image value attached</span>
                 )}
               </div>
             )}

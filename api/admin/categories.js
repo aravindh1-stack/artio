@@ -1,11 +1,31 @@
 import { ensureAdminSchema, getPool } from '../_db.js';
 
+const isProbablyRawBase64 = (value) =>
+  typeof value === 'string' && value.length > 120 && !value.includes(' ') && /^[A-Za-z0-9+/=]+$/.test(value);
+
+const normalizeImageValue = (value) => {
+  if (!value || typeof value !== 'string') {
+    return '';
+  }
+
+  const trimmed = value.trim();
+  if (trimmed.startsWith('data:image/')) {
+    return trimmed;
+  }
+
+  if (isProbablyRawBase64(trimmed)) {
+    return `data:image/jpeg;base64,${trimmed}`;
+  }
+
+  return trimmed;
+};
+
 const mapCategory = (row) => ({
   id: row.id,
   name: row.name,
   slug: row.slug,
   description: row.description || '',
-  image_path: row.image_url || row.image_path || '',
+  image_path: normalizeImageValue(row.image_url || row.image_path || ''),
   display_order: row.display_order || 0,
 });
 
@@ -25,7 +45,7 @@ export default async function handler(req, res) {
         `INSERT INTO categories (name, slug, description, image_url, display_order)
          VALUES ($1,$2,$3,$4,$5)
          RETURNING *`,
-        [payload.name, payload.slug, payload.description || '', payload.image_path || '', payload.display_order || 0]
+        [payload.name, payload.slug, payload.description || '', normalizeImageValue(payload.image_path || ''), payload.display_order || 0]
       );
       return res.status(201).json(mapCategory(result.rows[0]));
     }
@@ -45,7 +65,7 @@ export default async function handler(req, res) {
              display_order = $5
          WHERE id = $6
          RETURNING *`,
-        [payload.name, payload.slug, payload.description || '', payload.image_path || '', payload.display_order || 0, payload.id]
+        [payload.name, payload.slug, payload.description || '', normalizeImageValue(payload.image_path || ''), payload.display_order || 0, payload.id]
       );
 
       if (result.rowCount === 0) {
