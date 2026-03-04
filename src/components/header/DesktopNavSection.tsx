@@ -18,7 +18,7 @@ const DesktopNavSection = ({ navigation, isActive }: DesktopNavSectionProps) => 
           <Link
             key={item.name}
             to={item.href}
-            className={`px-4 py-2.5 rounded-full no-underline text-[11px] font-semibold tracking-[0.14em] uppercase transition-all duration-200 ${
+            className={`px-4 py-2.5 rounded-full whitespace-nowrap no-underline text-[11px] font-semibold tracking-[0.14em] uppercase transition-all duration-200 ${
               isActive(item.href)
                 ? 'bg-black/10 dark:bg-white/14 text-gray-900 dark:text-white shadow-[inset_0_0_0_1px_rgba(17,24,39,0.12)] dark:shadow-[inset_0_0_0_1px_rgba(255,255,255,0.12)]'
                 : 'text-gray-600 dark:text-white/65 hover:text-gray-900 dark:hover:text-white hover:bg-black/5 dark:hover:bg-white/8'
