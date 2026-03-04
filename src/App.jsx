@@ -10,6 +10,7 @@ import Auth from './pages/Auth';
 import Cart from './pages/Cart';
 import Admin from './pages/Admin';
 import Orders from './pages/Orders';
+import FoundersPortfolio from './pages/FoundersPortfolio';
 import { useThemeStore } from './store/themeStore';
 import { useAuthStore } from './store/authStore';
 import AdminRoute from './components/AdminRoute';
@@ -72,6 +73,7 @@ function App() {
           <Route path="/auth" element={<Auth />} />
           <Route path="/cart" element={<Cart />} />
           <Route path="/orders" element={<Orders />} />
+          <Route path="/founders-portfolio" element={<FoundersPortfolio />} />
           <Route
             path="/admin"
             element={
