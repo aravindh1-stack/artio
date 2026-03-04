@@ -181,7 +181,7 @@ const Auth = () => {
             <p className="text-gray-600 dark:text-gray-400">
               {isLogin
                 ? 'Sign in to access your account'
-                : 'Join Artio Redefined today'}
+                : 'Join Artio today'}
             </p>
           </div>
 

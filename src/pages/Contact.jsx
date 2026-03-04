@@ -77,8 +77,8 @@ const Contact = () => {
     {
       icon: Mail,
       title: 'Email',
-      content: 'hello@artioredefined.com',
-      link: 'mailto:hello@artioredefined.com',
+      content: 'hello@artio.com',
+      link: 'mailto:hello@artio.com',
     },
     {
       icon: Phone,

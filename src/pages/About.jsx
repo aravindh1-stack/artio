@@ -50,7 +50,7 @@ const About = () => {
             className="text-center max-w-3xl mx-auto"
           >
             <h1 className="text-5xl sm:text-6xl font-bold mb-6 text-gradient">
-              About Artio Redefined
+              About Artio
             </h1>
             <p className="text-xl text-gray-600 dark:text-gray-400 leading-relaxed">
               We believe in the transformative power of exceptional design. Every piece in our collection is chosen to inspire, elevate, and bring meaning to the spaces we inhabit.
@@ -71,7 +71,7 @@ const About = () => {
               <h2 className="text-4xl font-bold mb-6">Design-First Philosophy</h2>
               <div className="space-y-4 text-lg text-gray-600 dark:text-gray-400">
                 <p>
-                  At Artio Redefined, we don't just sell art - we curate experiences. Our design-first approach means every piece is evaluated not just for its aesthetic merit, but for its ability to transform and enhance the environment it inhabits.
+                  At Artio, we don't just sell art - we curate experiences. Our design-first approach means every piece is evaluated not just for its aesthetic merit, but for its ability to transform and enhance the environment it inhabits.
                 </p>
                 <p>
                   We work with talented artists and photographers from around the world, ensuring that each print meets our exacting standards for composition, color theory, and emotional impact.

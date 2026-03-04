@@ -51,7 +51,7 @@ const Footer = () => {
           </div>
         </div>
         <div className="mt-10 pt-6 border-t border-gray-200 dark:border-gray-800 flex flex-col sm:flex-row items-center justify-between gap-2 text-xs text-gray-500 dark:text-gray-500">
-          <p>2026 Artio Redefined Gallery. All rights reserved.</p>
+          <p>2026 Artio Gallery. All rights reserved.</p>
           <div className="flex gap-4">
             <span>Privacy</span>
             <span>Terms</span>

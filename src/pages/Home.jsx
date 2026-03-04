@@ -58,7 +58,7 @@ const Home = () => {
             </div>
 
             <h1 className="text-5xl sm:text-6xl lg:text-7xl font-bold text-gradient leading-tight">
-              Artio Redefined
+              Artio
               <br />
               <span className="text-gray-600 dark:text-gray-400">Where Art Meets Purpose</span>
             </h1>

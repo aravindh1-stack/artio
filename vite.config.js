@@ -9,7 +9,7 @@ export default defineConfig({
       registerType: 'autoUpdate',
       includeAssets: ['icon-192.png', 'icon-512.png'],
       manifest: {
-        name: 'Artio Redefined Gallery',
+        name: 'Artio Gallery',
         short_name: 'Artio',
         description: 'Premium visual identities and museum-quality art prints',
         theme_color: '#000000',
