@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
-import Header from './components/Header';
+import Header from './components/header/Header';
 import Home from './pages/Home';
 import About from './pages/About';
 import Store from './pages/Store';
@@ -26,7 +26,7 @@ function App() {
       const { state } = JSON.parse(savedTheme);
       setTheme(state.isDark);
     } else {
-      setTheme(true);
+      setTheme(false);
     }
 
     initialize();
