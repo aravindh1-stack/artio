@@ -7,7 +7,7 @@ export default defineConfig({
     react(),
     VitePWA({
       registerType: 'autoUpdate',
-      includeAssets: ['icon-192.png', 'icon-512.png'],
+      includeAssets: ['artio-favicon.png'],
       manifest: {
         name: 'Artio Gallery',
         short_name: 'Artio',
@@ -17,12 +17,12 @@ export default defineConfig({
         display: 'standalone',
         icons: [
           {
-            src: '/icon-192.png',
+            src: '/artio-favicon.png',
             sizes: '192x192',
             type: 'image/png'
           },
           {
-            src: '/icon-512.png',
+            src: '/artio-favicon.png',
             sizes: '512x512',
             type: 'image/png'
           }

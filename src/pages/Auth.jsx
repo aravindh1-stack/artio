@@ -5,11 +5,9 @@ import { Mail, Lock, User as UserIcon } from 'lucide-react';
 import Button from '../components/ui/Button';
 import Input from '../components/ui/Input';
 import Card from '../components/ui/Card';
-
-import artioLightLogo from '../assets/artio-light-logo.png';
-import artioDarkLogo from '../assets/artio-dark-logo.png';
 import emailjs from 'emailjs-com';
 import { useAuthStore } from '../store/authStore';
+import { useThemeStore } from '../store/themeStore';
 
 const Auth = () => {
   const [isLogin, setIsLogin] = useState(true);
@@ -28,6 +26,7 @@ const Auth = () => {
   const setUser = useAuthStore((state) => state.setUser);
   const setSession = useAuthStore((state) => state.setSession);
   const fetchProfile = useAuthStore((state) => state.fetchProfile);
+  const { isDark } = useThemeStore();
 
   useEffect(() => {
     const mode = searchParams.get('mode');
@@ -170,7 +169,7 @@ const Auth = () => {
           <div className="text-center mb-8 flex flex-col items-center">
             <span className="relative w-16 h-16 mb-2">
               <img
-                src={window.matchMedia('(prefers-color-scheme: dark)').matches ? artioDarkLogo : artioLightLogo}
+                src={isDark ? '/artio-dark-theme.png' : '/artio-light-theme.png'}
                 alt="Artio Logo"
                 className="w-16 h-16 object-contain mx-auto"
               />

@@ -5,8 +5,6 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useCartStore } from '../store/cartStore';
 import { useThemeStore } from '../store/themeStore';
 import { useAuthStore } from '../store/authStore';
-import artioLightLogo from '../assets/artio-light-logo.png';
-import artioDarkLogo from '../assets/artio-dark-logo.png';
 
 const Header = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -34,7 +32,7 @@ const Header = () => {
           <Link to="/" className="flex items-center space-x-2 group">
             <span className="relative w-10 h-10 flex items-center">
               <img
-                src={isDark ? artioDarkLogo : artioLightLogo}
+                src={isDark ? '/artio-dark-theme.png' : '/artio-light-theme.png'}
                 alt="Artio Logo"
                 className="w-10 h-10 object-contain transition-all duration-200 group-hover:scale-105"
               />

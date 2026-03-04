@@ -1,8 +1,8 @@
 import { Link } from 'react-router-dom';
-import artioLightLogo from '../assets/artio-light-logo.png';
-import artioDarkLogo from '../assets/artio-dark-logo.png';
+import { useThemeStore } from '../store/themeStore';
 
 const Footer = () => {
+  const { isDark } = useThemeStore();
   // ...existing code...
   return (
     <footer className="border-t border-gray-200 dark:border-gray-800 bg-white/80 dark:bg-black/80 backdrop-blur-md">
@@ -11,7 +11,7 @@ const Footer = () => {
           <div className="flex flex-col items-start">
             <span className="relative w-12 h-12 mb-2">
               <img
-                src={window.matchMedia('(prefers-color-scheme: dark)').matches ? artioDarkLogo : artioLightLogo}
+                src={isDark ? '/artio-dark-theme.png' : '/artio-light-theme.png'}
                 alt="Artio Logo"
                 className="w-12 h-12 object-contain"
               />
