@@ -21,13 +21,7 @@ function App() {
   const initialize = useAuthStore((state) => state.initialize);
 
   useEffect(() => {
-    const savedTheme = localStorage.getItem('artio-theme-storage');
-    if (savedTheme) {
-      const { state } = JSON.parse(savedTheme);
-      setTheme(state.isDark);
-    } else {
-      setTheme(false);
-    }
+    setTheme(false);
 
     initialize();
   }, [setTheme, initialize]);
