@@ -168,10 +168,10 @@
 
   .hero-desc {
     margin-top: 40px;
-    font-size: 12px;
-    letter-spacing: 0.12em;
-    line-height: 2;
-    color: var(--muted);
+    font-size: clamp(16px, 1.35vw, 22px);
+    letter-spacing: 0.04em;
+    line-height: 1.85;
+    color: rgba(245, 242, 236, 0.9);
     max-width: 420px;
     opacity: 0;
     animation: slideUp 1.2s ease 0.8s forwards;
@@ -187,12 +187,12 @@
   }
 
   .btn-primary {
-    padding: 16px 40px;
+    padding: 18px 42px;
     border: 1px solid var(--gold);
     color: var(--gold);
     text-decoration: none;
-    font-size: 10px;
-    letter-spacing: 0.3em;
+    font-size: 12px;
+    letter-spacing: 0.24em;
     text-transform: uppercase;
     transition: all 0.4s ease;
     position: relative;
@@ -211,10 +211,10 @@
   .btn-primary span { position: relative; z-index: 1; }
 
   .btn-text {
-    color: var(--muted);
+    color: rgba(245, 242, 236, 0.82);
     text-decoration: none;
-    font-size: 10px;
-    letter-spacing: 0.25em;
+    font-size: 12px;
+    letter-spacing: 0.18em;
     text-transform: uppercase;
     transition: color 0.3s;
     display: flex;
