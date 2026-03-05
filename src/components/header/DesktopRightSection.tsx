@@ -2,19 +2,29 @@ import { Link } from 'react-router-dom';
 import { ShoppingCart } from 'lucide-react';
 
 type DesktopRightSectionProps = {
-  supportLink: string;
   itemCount: number;
+  user: unknown;
+  signOut: () => void;
 };
 
-const DesktopRightSection = ({ supportLink, itemCount }: DesktopRightSectionProps) => {
+const DesktopRightSection = ({ itemCount, user, signOut }: DesktopRightSectionProps) => {
   return (
     <div className="hidden md:flex items-center gap-2">
-      <Link
-        to={supportLink}
-        className="px-6 py-3 rounded-full whitespace-nowrap bg-gray-900 dark:bg-teal-500 hover:bg-gray-800 dark:hover:bg-teal-400 text-white text-xs font-semibold tracking-[0.12em] uppercase transition-colors shadow-[0_10px_22px_rgba(15,23,42,0.22)] dark:shadow-[0_10px_26px_rgba(20,184,166,0.3)]"
-      >
-        Contact Us
-      </Link>
+      {user ? (
+        <button
+          onClick={signOut}
+          className="px-6 py-3 rounded-full whitespace-nowrap bg-gray-900 dark:bg-teal-500 hover:bg-gray-800 dark:hover:bg-teal-400 text-white text-xs font-semibold tracking-[0.12em] uppercase transition-colors shadow-[0_10px_22px_rgba(15,23,42,0.22)] dark:shadow-[0_10px_26px_rgba(20,184,166,0.3)]"
+        >
+          Sign Out
+        </button>
+      ) : (
+        <Link
+          to="/auth"
+          className="px-6 py-3 rounded-full whitespace-nowrap bg-gray-900 dark:bg-teal-500 hover:bg-gray-800 dark:hover:bg-teal-400 text-white text-xs font-semibold tracking-[0.12em] uppercase transition-colors shadow-[0_10px_22px_rgba(15,23,42,0.22)] dark:shadow-[0_10px_26px_rgba(20,184,166,0.3)]"
+        >
+          Login / Signup
+        </Link>
+      )}
 
       <Link
         to="/cart"

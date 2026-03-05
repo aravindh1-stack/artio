@@ -18,22 +18,20 @@ const Header = () => {
   const { user, signOut, role } = useAuthStore();
 
   const navigation = getNavigation(role);
-  const isActive = (path) => location.pathname === path;
+  const isActive = (path: string) => location.pathname === path;
 
   return (
     <header className="fixed top-12 left-0 right-0 z-30 bg-transparent">
       <nav className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-        <div className="flex items-center justify-between gap-4">
+        <div className="flex items-center justify-between gap-2 lg:gap-3">
           <DesktopLeftSection
             isDark={isDark}
             toggleTheme={toggleTheme}
-            user={user}
-            signOut={signOut}
           />
 
           <DesktopNavSection navigation={navigation} isActive={isActive} />
 
-          <DesktopRightSection supportLink={supportLink} itemCount={itemCount} />
+          <DesktopRightSection itemCount={itemCount} user={user} signOut={signOut} />
 
           <MobileHeaderBar
             isDark={isDark}
