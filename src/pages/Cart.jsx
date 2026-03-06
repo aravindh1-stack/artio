@@ -45,8 +45,8 @@ const Cart = () => {
     accountName: 'Your Account Name',
     accountNumber: '0000000000',
     iban: 'IBAN00000000000000000000',
-    whatsappNumber: '0000000000',
-    email: 'payments@example.com',
+    whatsappNumber: '919443130705',
+    email: 'officialartio375@gmail.com',
   };
 
   const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;

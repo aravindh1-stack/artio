@@ -77,19 +77,19 @@ const Contact = () => {
     {
       icon: Mail,
       title: 'Email',
-      content: 'hello@artio.com',
-      link: 'mailto:hello@artio.com',
+      content: 'officialartio375@gmail.com',
+      link: 'mailto:officialartio375@gmail.com',
     },
     {
       icon: Phone,
       title: 'Phone',
-      content: '+1 (555) 123-4567',
-      link: 'tel:+15551234567',
+      content: '9443130705',
+      link: 'tel:+919443130705',
     },
     {
       icon: MapPin,
       title: 'Location',
-      content: 'San Francisco, CA',
+      content: 'Tamil nadu,India',
       link: null,
     },
   ];
@@ -226,7 +226,7 @@ const Contact = () => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="relative h-[400px] rounded-2xl overflow-hidden">
             <iframe
-              src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d100939.98555098464!2d-122.50764017832633!3d37.75767191525608!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x80859a6d00690021%3A0x4a501367f076adff!2sSan%20Francisco%2C%20CA!5e0!3m2!1sen!2sus!4v1234567890123!5m2!1sen!2sus"
+              src="https://www.google.com/maps?q=Tamil%20nadu%2CIndia&output=embed"
               width="100%"
               height="100%"
               style={{ border: 0 }}

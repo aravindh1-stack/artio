@@ -44,8 +44,9 @@ const Footer = () => {
               Contact
             </h4>
             <div className="mt-3 text-sm text-gray-600 dark:text-gray-400 space-y-2">
-              <p>Email: hello@artio.gallery</p>
-              <p>WhatsApp: +0000000000</p>
+              <p>Email: officialartio375@gmail.com</p>
+              <p>WhatsApp: 9443130705</p>
+              <p>Address: Tamil nadu,India</p>
               <p>Hours: Mon-Sat, 10:00-18:00</p>
             </div>
           </div>
