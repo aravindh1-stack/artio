@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { ShoppingCart } from 'lucide-react';
+import { LogOut, ShoppingCart, User } from 'lucide-react';
 
 type DesktopRightSectionProps = {
   itemCount: number;
@@ -9,20 +9,24 @@ type DesktopRightSectionProps = {
 
 const DesktopRightSection = ({ itemCount, user, signOut }: DesktopRightSectionProps) => {
   return (
-    <div className="hidden md:flex items-center gap-2">
+    <div className="hidden md:flex items-center gap-1.5">
       {user ? (
         <button
           onClick={signOut}
-          className="px-6 py-3 rounded-full whitespace-nowrap bg-gray-900 dark:bg-teal-500 hover:bg-gray-800 dark:hover:bg-teal-400 text-white text-xs font-semibold tracking-[0.12em] uppercase transition-colors shadow-[0_10px_22px_rgba(15,23,42,0.22)] dark:shadow-[0_10px_26px_rgba(20,184,166,0.3)]"
+          aria-label="Sign out"
+          title="Sign out"
+          className="h-10 w-10 inline-flex items-center justify-center rounded-full bg-gray-900 dark:bg-teal-500 hover:bg-gray-800 dark:hover:bg-teal-400 text-white transition-colors shadow-[0_10px_22px_rgba(15,23,42,0.22)] dark:shadow-[0_10px_26px_rgba(20,184,166,0.3)]"
         >
-          Sign Out
+          <LogOut className="w-4 h-4" />
         </button>
       ) : (
         <Link
           to="/auth"
-          className="px-6 py-3 rounded-full whitespace-nowrap bg-gray-900 dark:bg-teal-500 hover:bg-gray-800 dark:hover:bg-teal-400 text-white text-xs font-semibold tracking-[0.12em] uppercase transition-colors shadow-[0_10px_22px_rgba(15,23,42,0.22)] dark:shadow-[0_10px_26px_rgba(20,184,166,0.3)]"
+          aria-label="Sign in or sign up"
+          title="Sign in / Sign up"
+          className="h-10 w-10 inline-flex items-center justify-center rounded-full bg-gray-900 dark:bg-teal-500 hover:bg-gray-800 dark:hover:bg-teal-400 text-white transition-colors shadow-[0_10px_22px_rgba(15,23,42,0.22)] dark:shadow-[0_10px_26px_rgba(20,184,166,0.3)]"
         >
-          Login / Signup
+          <User className="w-4 h-4" />
         </Link>
       )}
 

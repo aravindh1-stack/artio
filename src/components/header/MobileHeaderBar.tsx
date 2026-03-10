@@ -1,10 +1,12 @@
 import { Link } from 'react-router-dom';
-import { Menu, X, ShoppingCart, Moon, Sun } from 'lucide-react';
+import { Menu, X, ShoppingCart, Moon, Sun, User, LogOut } from 'lucide-react';
 
 type MobileHeaderBarProps = {
   isDark: boolean;
   toggleTheme: () => void;
   itemCount: number;
+  user: unknown;
+  signOut: () => void;
   mobileMenuOpen: boolean;
   setMobileMenuOpen: (value: boolean) => void;
 };
@@ -13,6 +15,8 @@ const MobileHeaderBar = ({
   isDark,
   toggleTheme,
   itemCount,
+  user,
+  signOut,
   mobileMenuOpen,
   setMobileMenuOpen,
 }: MobileHeaderBarProps) => {
@@ -32,6 +36,25 @@ const MobileHeaderBar = ({
       >
         {isDark ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
       </button>
+      {user ? (
+        <button
+          onClick={signOut}
+          aria-label="Sign out"
+          title="Sign out"
+          className="p-2 rounded-full border border-black/10 dark:border-white/15 text-gray-700 dark:text-white/80 bg-white/70 dark:bg-black/25"
+        >
+          <LogOut className="w-4 h-4" />
+        </button>
+      ) : (
+        <Link
+          to="/auth"
+          aria-label="Sign in or sign up"
+          title="Sign in / Sign up"
+          className="p-2 rounded-full border border-black/10 dark:border-white/15 text-gray-700 dark:text-white/80 bg-white/70 dark:bg-black/25"
+        >
+          <User className="w-4 h-4" />
+        </Link>
+      )}
       <Link
         to="/cart"
         className="relative p-2 rounded-full border border-black/10 dark:border-white/15 text-gray-700 dark:text-white/80 bg-white/70 dark:bg-black/25"

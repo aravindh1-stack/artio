@@ -22,8 +22,8 @@ const Header = () => {
 
   return (
     <header className="fixed top-16 left-0 right-0 z-30 bg-transparent">
-      <nav className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-        <div className="flex items-center justify-between gap-2 lg:gap-3">
+      <nav className="max-w-6xl mx-auto px-4 sm:px-5 lg:px-6 py-4">
+        <div className="flex items-center justify-center gap-3 lg:gap-4">
           <DesktopLeftSection
             isDark={isDark}
             toggleTheme={toggleTheme}
@@ -37,6 +37,8 @@ const Header = () => {
             isDark={isDark}
             toggleTheme={toggleTheme}
             itemCount={itemCount}
+            user={user}
+            signOut={signOut}
             mobileMenuOpen={mobileMenuOpen}
             setMobileMenuOpen={setMobileMenuOpen}
           />
