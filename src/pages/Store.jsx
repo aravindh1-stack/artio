@@ -98,6 +98,8 @@ const Store = () => {
   const [searchParams] = useSearchParams();
   const addItem = useCartStore((state) => state.addItem);
 
+  const formatPrice = (amount) => `$${Number(amount || 0).toFixed(2)}`;
+
 
 
   useEffect(() => {
@@ -311,7 +313,7 @@ const Store = () => {
                         {product.description}
                       </p>
                       <div className="flex items-center justify-between">
-                        <span className="text-xl font-semibold text-slate-900 dark:text-amber-200">${product.price}</span>
+                        <span className="text-xl font-semibold text-slate-900 dark:text-amber-200">{formatPrice(product.price)}</span>
                         <Button
                           size="sm"
                           onClick={() => handleAddToCart(product)}
@@ -378,7 +380,7 @@ const Store = () => {
               </div>
               <div className="mt-auto">
                 <div className="flex items-center justify-between mb-4">
-                  <span className="text-3xl font-bold">${quickViewProduct.price}</span>
+                  <span className="text-3xl font-bold">{formatPrice(quickViewProduct.price)}</span>
                 </div>
                 <Button
                   size="lg"

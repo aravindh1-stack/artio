@@ -20,7 +20,7 @@ const Cart = () => {
   const { items, removeItem, updateQuantity, getTotal, clearCart } = useCartStore();
   const { user } = useAuthStore();
   const total = getTotal();
-  const totalWithTax = total * 1.1;
+  const orderGrandTotal = total;
   const navigate = useNavigate();
   const [placingOrder, setPlacingOrder] = useState(false);
   const [orderError, setOrderError] = useState('');
@@ -58,6 +58,8 @@ const Cart = () => {
   };
 
   const currentUserId = user?.id || '';
+
+  const formatPrice = (amount) => `$${Number(amount || 0).toFixed(2)}`;
 
   const mapAddress = (address) => ({
     id: address?.id ?? '',
@@ -309,17 +311,17 @@ const Cart = () => {
             postal_code: selectedAddress.postalCode,
             country: selectedAddress.country,
           },
-          totalAmount: totalWithTax,
+          totalAmount: orderGrandTotal,
         });
 
         setOrderId(data.id);
         setOrderSummary(items.map((item) => ({
           name: item.name,
           quantity: item.quantity,
-          price: item.price,
+          price: Number(item.price || 0),
         })));
         setOrderAddress(selectedAddress);
-        setOrderTotal(totalWithTax);
+        setOrderTotal(orderGrandTotal);
         setOrderSuccess(true);
         clearCart();
       } catch (err) {
@@ -337,7 +339,7 @@ const Cart = () => {
       `Hello, I placed an order (${orderId}). Please share payment instructions.`
     )}`;
     const itemsText = orderSummary.length
-      ? orderSummary.map((item) => `- ${item.name} x${item.quantity} ($${item.price})`).join('\n')
+      ? orderSummary.map((item) => `- ${item.name} x${item.quantity} (${formatPrice(item.price)})`).join('\n')
       : '- (items not available)';
     const addressText = orderAddress
       ? [
@@ -360,7 +362,7 @@ const Cart = () => {
       'Delivery address:',
       addressText,
       '',
-      `Total: $${orderTotal.toFixed(2)}`,
+      `Total: ${formatPrice(orderTotal)}`,
       '',
       'Please share payment instructions.',
     ].join('\n');
@@ -520,10 +522,10 @@ const Cart = () => {
                         </div>
                         <div className="text-right">
                           <p className="text-lg font-bold">
-                            ${(item.price * item.quantity).toFixed(2)}
+                            {formatPrice(item.price * item.quantity)}
                           </p>
                           <p className="text-sm text-gray-600 dark:text-gray-400">
-                            ${item.price} each
+                            {formatPrice(item.price)} each
                           </p>
                         </div>
                       </div>
@@ -714,20 +716,16 @@ const Cart = () => {
                 <div className="space-y-4 mb-6">
                   <div className="flex justify-between text-gray-600 dark:text-gray-400">
                     <span>Subtotal</span>
-                    <span>${total.toFixed(2)}</span>
+                    <span>{formatPrice(total)}</span>
                   </div>
                   <div className="flex justify-between text-gray-600 dark:text-gray-400">
                     <span>Shipping</span>
                     <span>Free</span>
                   </div>
-                  <div className="flex justify-between text-gray-600 dark:text-gray-400">
-                    <span>Tax</span>
-                    <span>${(total * 0.1).toFixed(2)}</span>
-                  </div>
                   <div className="pt-4 border-t border-gray-200 dark:border-gray-800">
                     <div className="flex justify-between text-xl font-bold">
                       <span>Total</span>
-                      <span>${totalWithTax.toFixed(2)}</span>
+                      <span>{formatPrice(orderGrandTotal)}</span>
                     </div>
                   </div>
                 </div>

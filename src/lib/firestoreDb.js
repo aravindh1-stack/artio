@@ -50,6 +50,29 @@ const normalizeCategoryToken = (value) =>
     .toLowerCase()
     .replace(/^cat[-_]/, '');
 
+const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
+const bytesToHex = (bytes) => Array.from(bytes).map((byte) => byte.toString(16).padStart(2, '0')).join('');
+
+const normalizeLegacyUserId = async (userId) => {
+  const rawValue = String(userId ?? '').trim().toLowerCase();
+  if (!rawValue) {
+    return '';
+  }
+
+  if (uuidRegex.test(rawValue)) {
+    return rawValue;
+  }
+
+  // Keep compatibility with earlier server-side ID normalization used in /api routes.
+  const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(rawValue));
+  const hash = bytesToHex(new Uint8Array(digest));
+  const version = `4${hash.slice(13, 16)}`;
+  const variantNibble = ['8', '9', 'a', 'b'][parseInt(hash[16], 16) % 4];
+  const variant = `${variantNibble}${hash.slice(17, 20)}`;
+  return `${hash.slice(0, 8)}-${hash.slice(8, 12)}-${version}-${variant}-${hash.slice(20, 32)}`;
+};
+
 export const getPublicCategories = async () => {
   const db = requireDb();
   const snap = await getDocs(collection(db, 'categories'));
@@ -236,10 +259,24 @@ export const upsertProfile = async ({ userId, email, fullName = '', phone = '' }
 
 export const getAddressesByUser = async (userId) => {
   const db = requireDb();
-  const q = query(collection(db, 'addresses'), where('user_id', '==', String(userId)));
-  const snap = await getDocs(q);
+  const canonicalUserId = String(userId || '').trim();
+  if (!canonicalUserId) {
+    return [];
+  }
 
-  return snap.docs
+  const legacyUserId = await normalizeLegacyUserId(canonicalUserId);
+
+  const [primarySnap, legacySnap] = await Promise.all([
+    getDocs(query(collection(db, 'addresses'), where('user_id', '==', canonicalUserId))),
+    legacyUserId && legacyUserId !== canonicalUserId
+      ? getDocs(query(collection(db, 'addresses'), where('user_id', '==', legacyUserId)))
+      : Promise.resolve({ docs: [] }),
+  ]);
+
+  const mergedRows = [...primarySnap.docs, ...legacySnap.docs];
+  const uniqueRows = [...new Map(mergedRows.map((row) => [row.id, row])).values()];
+
+  return uniqueRows
     .map((row) => ({ id: row.id, ...(row.data() || {}) }))
     .sort((a, b) => {
       if (Boolean(a.is_default) !== Boolean(b.is_default)) {
@@ -384,12 +421,26 @@ export const createOrder = async ({ userId, items, shippingAddress, totalAmount 
 
 export const getOrders = async ({ userId } = {}) => {
   const db = requireDb();
+  const canonicalUserId = String(userId || '').trim();
+  const legacyUserId = canonicalUserId ? await normalizeLegacyUserId(canonicalUserId) : '';
+
+  const userOrderPromises = canonicalUserId
+    ? [
+        getDocs(query(collection(db, 'orders'), where('user_id', '==', canonicalUserId))),
+        legacyUserId && legacyUserId !== canonicalUserId
+          ? getDocs(query(collection(db, 'orders'), where('user_id', '==', legacyUserId)))
+          : Promise.resolve({ docs: [] }),
+      ]
+    : [getDocs(collection(db, 'orders')), Promise.resolve({ docs: [] })];
+
   const [ordersSnap, productsSnap] = await Promise.all([
-    userId
-      ? getDocs(query(collection(db, 'orders'), where('user_id', '==', String(userId))))
-      : getDocs(collection(db, 'orders')),
+    Promise.all(userOrderPromises),
     getDocs(collection(db, 'products')),
   ]);
+
+  const [primaryOrdersSnap, legacyOrdersSnap] = ordersSnap;
+  const mergedOrderDocs = [...primaryOrdersSnap.docs, ...legacyOrdersSnap.docs];
+  const uniqueOrderDocs = [...new Map(mergedOrderDocs.map((row) => [row.id, row])).values()];
 
   const productById = new Map(
     productsSnap.docs.map((row) => {
@@ -398,7 +449,7 @@ export const getOrders = async ({ userId } = {}) => {
     })
   );
 
-  return ordersSnap.docs
+  return uniqueOrderDocs
     .map((row) => ({ id: row.id, ...(row.data() || {}) }))
     .sort((a, b) => String(b.created_at || '').localeCompare(String(a.created_at || '')))
     .map((order) => ({
