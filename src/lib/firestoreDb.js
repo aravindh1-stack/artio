@@ -515,6 +515,31 @@ export const updateUserRoleAdmin = async (userId, role) => {
   await updateDoc(ref, { role, updated_at: nowIso() });
 };
 
+export const deleteUserAdmin = async (userId) => {
+  const db = requireDb();
+  const normalizedUserId = String(userId || '').trim();
+  if (!normalizedUserId) {
+    throw new Error('userId is required');
+  }
+
+  const [profileSnap, addressesSnap] = await Promise.all([
+    getDoc(doc(db, 'profiles', normalizedUserId)),
+    getDocs(query(collection(db, 'addresses'), where('user_id', '==', normalizedUserId))),
+  ]);
+
+  const batch = writeBatch(db);
+
+  if (profileSnap.exists()) {
+    batch.delete(doc(db, 'profiles', normalizedUserId));
+  }
+
+  addressesSnap.docs.forEach((row) => {
+    batch.delete(doc(db, 'addresses', row.id));
+  });
+
+  await batch.commit();
+};
+
 export const getUserAddressesAdmin = async (userId) => getAddressesByUser(userId);
 
 export const getProductsAdmin = async () => getPublicProducts();

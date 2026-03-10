@@ -1,5 +1,10 @@
 import { create } from 'zustand';
-import { onAuthStateChanged, signOut as firebaseSignOut } from 'firebase/auth';
+import {
+  browserLocalPersistence,
+  onAuthStateChanged,
+  setPersistence,
+  signOut as firebaseSignOut,
+} from 'firebase/auth';
 import { firebaseAuth, isFirebaseConfigured } from '../lib/firebase';
 import { getProfileByUser } from '../lib/firestoreDb';
 
@@ -51,9 +56,19 @@ export const useAuthStore = create((set, get) => ({
       existingUnsubscribe();
     }
 
+    try {
+      // Keep auth session across hard refresh/reload in browser.
+      await setPersistence(firebaseAuth, browserLocalPersistence);
+    } catch {
+      // If persistence setup fails, auth listener still works for current session.
+    }
+
+    let didHandleInitialState = false;
+
     const unsubscribe = onAuthStateChanged(firebaseAuth, async (firebaseUser) => {
       if (!firebaseUser) {
         set({ user: null, session: null, profile: null, role: 'user', loading: false });
+        didHandleInitialState = true;
         return;
       }
 
@@ -65,9 +80,11 @@ export const useAuthStore = create((set, get) => ({
 
       set({ user: nextUser, session: { uid: firebaseUser.uid }, loading: false });
       await get().fetchProfile(nextUser);
+      didHandleInitialState = true;
     });
 
-    set({ unsubscribeAuth: unsubscribe, loading: false });
+    // Keep loading until first auth-state callback completes.
+    set({ unsubscribeAuth: unsubscribe, loading: didHandleInitialState ? false : true });
   },
 
   signOut: async () => {

@@ -125,12 +125,14 @@ const toRenderableImageSrc = (value) => {
 };
 import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
+import { Package, ReceiptText, Shield, Trash2, UserRound } from 'lucide-react';
 import Card from '../components/ui/Card';
 import Button from '../components/ui/Button';
 import Input from '../components/ui/Input';
 import DragDropImage from '../components/ui/DragDropImage';
 import Modal from '../components/ui/Modal';
 import {
+  deleteUserAdmin,
   deleteCategoryAdmin,
   deleteProductAdmin,
   getCategoriesAdmin,
@@ -178,6 +180,16 @@ const emptyCategory = {
 };
 
 const toCurrency = (value) => `$${Number(value || 0).toFixed(2)}`;
+const getInitials = (nameOrEmail) => {
+  const source = String(nameOrEmail || '').trim();
+  if (!source) return 'U';
+  const parts = source.split(/\s+/).filter(Boolean);
+  if (parts.length === 1) {
+    return parts[0].slice(0, 2).toUpperCase();
+  }
+  return `${parts[0][0] || ''}${parts[1][0] || ''}`.toUpperCase();
+};
+const formatRole = (role) => String(role || 'user').trim().toLowerCase();
 
 const Admin = () => {
     const [productImageFiles, setProductImageFiles] = useState([]);
@@ -204,9 +216,9 @@ const Admin = () => {
   const [categoryForm, setCategoryForm] = useState(emptyCategory);
 
   const tabs = [
-    { id: 'orders', label: 'Orders' },
-    { id: 'products', label: 'Products' },
-    { id: 'users', label: 'Users' },
+    { id: 'orders', label: 'Orders', icon: ReceiptText },
+    { id: 'products', label: 'Products', icon: Package },
+    { id: 'users', label: 'Users', icon: UserRound },
   ];
 
   const paidOrders = orders.filter((order) => String(order.payment_status || '').toLowerCase() === 'paid').length;
@@ -217,6 +229,12 @@ const Admin = () => {
     { label: 'Categories', value: String(categories.length), hint: 'Catalog structure' },
     { label: 'Revenue', value: toCurrency(totalRevenue), hint: 'Across all orders' },
   ];
+
+  const tabCountById = {
+    orders: orders.length,
+    products: products.length,
+    users: users.length,
+  };
 
   const loadOrders = async () => {
     const data = await getOrders();
@@ -360,6 +378,24 @@ const Admin = () => {
     }
   };
 
+  const deleteUser = async (user) => {
+    const displayName = user?.full_name || user?.email || user?.id || 'this user';
+    if (!window.confirm(`Delete ${displayName}? This removes profile and saved addresses.`)) {
+      return;
+    }
+
+    try {
+      await deleteUserAdmin(user.id);
+      await loadUsers();
+      if (selectedUser?.id === user.id) {
+        setSelectedUser(null);
+        setUserAddresses([]);
+      }
+    } catch (err) {
+      setError(err.message || 'Failed to delete user.');
+    }
+  };
+
   const updateOrder = async (orderId, payload) => {
     try {
       await updateOrderAdmin(orderId, payload);
@@ -429,18 +465,26 @@ const Admin = () => {
           </div>
         )}
 
-        <div className="flex flex-wrap gap-2 mb-8">
+        <div className="mb-8 rounded-2xl border border-slate-200/80 dark:border-white/10 bg-white/70 dark:bg-white/[0.02] p-2 backdrop-blur-xl inline-flex flex-wrap gap-2">
           {tabs.map((tab) => (
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
-              className={`px-4 py-2.5 rounded-full text-xs font-semibold tracking-[0.12em] uppercase transition-colors border ${
+              className={`px-4 py-2.5 rounded-xl text-xs font-semibold tracking-[0.12em] uppercase transition-colors border inline-flex items-center gap-2 ${
                 activeTab === tab.id
                   ? 'bg-slate-900 dark:bg-amber-300 text-white dark:text-black border-slate-900 dark:border-amber-300 shadow-[0_8px_20px_rgba(15,23,42,0.2)]'
                   : 'bg-white/90 dark:bg-white/[0.03] border-slate-200 dark:border-white/15 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-white/[0.06]'
               }`}
             >
+              <tab.icon className="w-3.5 h-3.5" />
               {tab.label}
+              <span className={`min-w-5 h-5 px-1.5 rounded-md inline-flex items-center justify-center text-[10px] font-semibold ${
+                activeTab === tab.id
+                  ? 'bg-white/20 dark:bg-black/15 text-white dark:text-black'
+                  : 'bg-slate-200 dark:bg-white/10 text-slate-700 dark:text-slate-200'
+              }`}>
+                {tabCountById[tab.id] ?? 0}
+              </span>
             </button>
           ))}
         </div>
@@ -453,7 +497,12 @@ const Admin = () => {
           <>
             {activeTab === 'orders' && (
               <Card className="p-6 rounded-3xl border border-slate-200 dark:border-white/10 bg-white/80 dark:bg-white/[0.03] shadow-[0_20px_45px_rgba(15,23,42,0.08)] dark:shadow-[0_20px_45px_rgba(0,0,0,0.35)]">
-                <h2 className="text-2xl font-semibold mb-4 text-slate-900 dark:text-white">Orders</h2>
+                <div className="flex flex-wrap items-end justify-between gap-4 mb-5">
+                  <div>
+                    <h2 className="text-2xl font-semibold text-slate-900 dark:text-white">Orders</h2>
+                    <p className="text-sm text-slate-600 dark:text-slate-300 mt-1">Track fulfillment, payment state, and customer details.</p>
+                  </div>
+                </div>
                 <div className="space-y-4">
                   {orders.length === 0 ? (
                     <p className="text-slate-600 dark:text-slate-300">No orders yet.</p>
@@ -490,7 +539,7 @@ const Admin = () => {
                               <option value="paid">paid</option>
                               <option value="refunded">refunded</option>
                             </select>
-                            <Button variant="outline" size="sm" onClick={() => setSelectedOrder(order)}>
+                            <Button variant="outline" size="sm" className="rounded-xl" onClick={() => setSelectedOrder(order)}>
                               View
                             </Button>
                           </div>
@@ -507,7 +556,7 @@ const Admin = () => {
                 <Card className="p-6 rounded-3xl border border-slate-200 dark:border-white/10 bg-white/80 dark:bg-white/[0.03] shadow-[0_20px_45px_rgba(15,23,42,0.08)] dark:shadow-[0_20px_45px_rgba(0,0,0,0.35)]">
                   <div className="flex items-center justify-between mb-4">
                     <h2 className="text-2xl font-semibold text-slate-900 dark:text-white">Products</h2>
-                    <Button size="sm" className="rounded-full" onClick={() => openProductModal(null)}>
+                    <Button size="sm" className="rounded-xl" onClick={() => openProductModal(null)}>
                       Add Product
                     </Button>
                   </div>
@@ -528,14 +577,15 @@ const Admin = () => {
                               </p>
                             </div>
                             <div className="flex items-center gap-2">
-                              <Button variant="outline" size="sm" onClick={() => openProductModal(product)}>
+                              <Button variant="outline" size="sm" className="rounded-xl" onClick={() => openProductModal(product)}>
                                 Edit
                               </Button>
                               <button
                                 type="button"
                                 onClick={() => deleteProduct(product.id)}
-                                className="text-sm text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300"
+                                className="inline-flex items-center gap-1.5 rounded-xl border border-red-200 dark:border-red-800/40 bg-red-50 dark:bg-red-900/20 px-3 py-2 text-xs font-semibold uppercase tracking-[0.1em] text-red-600 dark:text-red-300 hover:bg-red-100 dark:hover:bg-red-900/30"
                               >
+                                <Trash2 className="w-3.5 h-3.5" />
                                 Delete
                               </button>
                             </div>
@@ -549,7 +599,7 @@ const Admin = () => {
                 <Card className="p-6 rounded-3xl border border-slate-200 dark:border-white/10 bg-white/80 dark:bg-white/[0.03] shadow-[0_20px_45px_rgba(15,23,42,0.08)] dark:shadow-[0_20px_45px_rgba(0,0,0,0.35)]">
                   <div className="flex items-center justify-between mb-4">
                     <h2 className="text-2xl font-semibold text-slate-900 dark:text-white">Categories</h2>
-                    <Button size="sm" className="rounded-full" onClick={() => openCategoryModal(null)}>
+                    <Button size="sm" className="rounded-xl" onClick={() => openCategoryModal(null)}>
                       Add Category
                     </Button>
                   </div>
@@ -565,14 +615,15 @@ const Admin = () => {
                               <p className="text-sm text-slate-600 dark:text-slate-300">Slug: {category.slug}</p>
                             </div>
                             <div className="flex items-center gap-2">
-                              <Button variant="outline" size="sm" onClick={() => openCategoryModal(category)}>
+                              <Button variant="outline" size="sm" className="rounded-xl" onClick={() => openCategoryModal(category)}>
                                 Edit
                               </Button>
                               <button
                                 type="button"
                                 onClick={() => deleteCategory(category.id)}
-                                className="text-sm text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300"
+                                className="inline-flex items-center gap-1.5 rounded-xl border border-red-200 dark:border-red-800/40 bg-red-50 dark:bg-red-900/20 px-3 py-2 text-xs font-semibold uppercase tracking-[0.1em] text-red-600 dark:text-red-300 hover:bg-red-100 dark:hover:bg-red-900/30"
                               >
+                                <Trash2 className="w-3.5 h-3.5" />
                                 Delete
                               </button>
                             </div>
@@ -587,7 +638,16 @@ const Admin = () => {
 
             {activeTab === 'users' && (
               <Card className="p-6 rounded-3xl border border-slate-200 dark:border-white/10 bg-white/80 dark:bg-white/[0.03] shadow-[0_20px_45px_rgba(15,23,42,0.08)] dark:shadow-[0_20px_45px_rgba(0,0,0,0.35)]">
-                <h2 className="text-2xl font-semibold mb-4 text-slate-900 dark:text-white">Users</h2>
+                <div className="flex flex-wrap items-end justify-between gap-4 mb-5">
+                  <div>
+                    <h2 className="text-2xl font-semibold text-slate-900 dark:text-white">Users</h2>
+                    <p className="text-sm text-slate-600 dark:text-slate-300 mt-1">Manage roles, delivery records, and account access.</p>
+                  </div>
+                  <div className="flex items-center gap-2 rounded-xl border border-slate-200 dark:border-white/10 bg-white/85 dark:bg-white/[0.03] px-3 py-2 text-xs text-slate-600 dark:text-slate-300">
+                    <Shield className="w-4 h-4" />
+                    <span>{users.filter((row) => formatRole(row.role) === 'admin').length} admins</span>
+                  </div>
+                </div>
                 <div className="space-y-4">
                   {users.length === 0 ? (
                     <p className="text-slate-600 dark:text-slate-300">No users yet.</p>
@@ -595,12 +655,26 @@ const Admin = () => {
                     users.map((user) => (
                       <div key={user.id} className="p-4 rounded-2xl border border-slate-200 dark:border-white/10 bg-white/85 dark:bg-white/[0.02] transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[0_12px_24px_rgba(15,23,42,0.1)] dark:hover:shadow-[0_12px_24px_rgba(0,0,0,0.3)]">
                         <div className="flex flex-wrap items-center justify-between gap-4">
-                          <div>
-                            <p className="font-semibold text-slate-900 dark:text-white">{user.full_name || 'No name'}</p>
-                            <p className="text-sm text-slate-600 dark:text-slate-300">{user.email}</p>
-                            <p className="text-sm text-slate-600 dark:text-slate-300">{user.phone || 'No phone'}</p>
+                          <div className="flex items-center gap-3">
+                            <div className="h-11 w-11 rounded-xl bg-slate-900 dark:bg-amber-300 text-white dark:text-black flex items-center justify-center text-sm font-semibold">
+                              {getInitials(user.full_name || user.email)}
+                            </div>
+                            <div>
+                              <div className="flex items-center gap-2">
+                                <p className="font-semibold text-slate-900 dark:text-white">{user.full_name || 'No name'}</p>
+                                <span className={`inline-flex items-center rounded-md px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.1em] ${
+                                  formatRole(user.role) === 'admin'
+                                    ? 'bg-amber-100 text-amber-800 dark:bg-amber-300/20 dark:text-amber-200'
+                                    : 'bg-slate-100 text-slate-700 dark:bg-slate-700/40 dark:text-slate-200'
+                                }`}>
+                                  {formatRole(user.role)}
+                                </span>
+                              </div>
+                              <p className="text-sm text-slate-600 dark:text-slate-300">{user.email}</p>
+                              <p className="text-sm text-slate-600 dark:text-slate-300">{user.phone || 'No phone'}</p>
+                            </div>
                           </div>
-                          <div className="flex items-center gap-2">
+                          <div className="flex flex-wrap items-center gap-2">
                             <select
                               className="border border-slate-200 dark:border-white/15 bg-white dark:bg-black/50 rounded-xl px-3 py-2 text-sm text-slate-700 dark:text-slate-200"
                               value={user.role || 'user'}
@@ -609,9 +683,17 @@ const Admin = () => {
                               <option value="user">user</option>
                               <option value="admin">admin</option>
                             </select>
-                            <Button variant="outline" size="sm" onClick={() => openUserModal(user)}>
+                            <Button variant="outline" size="sm" className="rounded-xl" onClick={() => openUserModal(user)}>
                               View addresses
                             </Button>
+                            <button
+                              type="button"
+                              onClick={() => deleteUser(user)}
+                              className="inline-flex items-center gap-1.5 rounded-xl border border-red-200 dark:border-red-800/40 bg-red-50 dark:bg-red-900/20 px-3 py-2 text-xs font-semibold uppercase tracking-[0.1em] text-red-600 dark:text-red-300 hover:bg-red-100 dark:hover:bg-red-900/30"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                              Delete
+                            </button>
                           </div>
                         </div>
                       </div>
@@ -917,29 +999,39 @@ const Admin = () => {
         size="lg"
       >
         {selectedUser && (
-          <div className="space-y-4">
-            <div>
-              <p className="font-semibold">{selectedUser.full_name || 'No name'}</p>
-              <p className="text-sm text-gray-600 dark:text-gray-400">{selectedUser.email}</p>
+          <div className="space-y-5">
+            <div className="rounded-2xl border border-slate-200 dark:border-white/10 bg-gradient-to-br from-slate-50 to-white dark:from-white/[0.05] dark:to-white/[0.02] p-4">
+              <p className="text-[11px] tracking-[0.16em] uppercase text-slate-500 dark:text-slate-400">Customer Profile</p>
+              <div className="mt-3 flex items-center gap-3">
+                <div className="h-11 w-11 rounded-xl bg-slate-900 dark:bg-amber-300 text-white dark:text-black flex items-center justify-center text-sm font-semibold">
+                  {getInitials(selectedUser.full_name || selectedUser.email)}
+                </div>
+                <div>
+                  <p className="font-semibold text-slate-900 dark:text-white">{selectedUser.full_name || 'No name'}</p>
+                  <p className="text-sm text-slate-600 dark:text-slate-300">{selectedUser.email}</p>
+                </div>
+              </div>
             </div>
             <div className="space-y-3">
               {userAddresses.length === 0 ? (
-                <p className="text-sm text-gray-600 dark:text-gray-400">No addresses saved.</p>
+                <p className="text-sm text-slate-600 dark:text-slate-300">No addresses saved.</p>
               ) : (
                 userAddresses.map((address) => (
-                  <div key={address.id} className="p-4 rounded-lg border border-gray-200 dark:border-gray-800">
-                    <p className="font-semibold">{address.full_name}</p>
-                    <p className="text-sm text-gray-600 dark:text-gray-400">{address.phone}</p>
-                    <p className="text-sm text-gray-600 dark:text-gray-400">
+                  <div key={address.id} className="p-4 rounded-2xl border border-slate-200 dark:border-white/10 bg-white/80 dark:bg-white/[0.02]">
+                    <div className="flex items-start justify-between gap-3">
+                      <p className="font-semibold text-slate-900 dark:text-white">{address.full_name}</p>
+                      {address.is_default && (
+                        <span className="text-[10px] uppercase tracking-[0.12em] bg-slate-900 text-white dark:bg-amber-300 dark:text-black rounded-md px-2 py-1">Default</span>
+                      )}
+                    </div>
+                    <p className="text-sm text-slate-600 dark:text-slate-300">{address.phone}</p>
+                    <p className="text-sm text-slate-600 dark:text-slate-300">
                       {address.address_line1} {address.address_line2}
                     </p>
-                    <p className="text-sm text-gray-600 dark:text-gray-400">
+                    <p className="text-sm text-slate-600 dark:text-slate-300">
                       {address.city}, {address.state} {address.postal_code}
                     </p>
-                    <p className="text-sm text-gray-600 dark:text-gray-400">{address.country}</p>
-                    {address.is_default && (
-                      <span className="text-xs text-gray-500 dark:text-gray-400">Default</span>
-                    )}
+                    <p className="text-sm text-slate-600 dark:text-slate-300">{address.country}</p>
                   </div>
                 ))
               )}
