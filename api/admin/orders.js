@@ -1,6 +1,16 @@
 import { randomUUID } from 'crypto';
 import { ensureAdminSchema, getPool, normalizeUserId, nowIso, toIso } from '../_db.js';
 
+const createArtioOrderId = () => {
+  const now = new Date();
+  const y = now.getFullYear();
+  const m = String(now.getMonth() + 1).padStart(2, '0');
+  const d = String(now.getDate()).padStart(2, '0');
+  const stamp = `${y}${m}${d}`;
+  const token = randomUUID().replace(/-/g, '').slice(0, 8).toUpperCase();
+  return `ARTIO-${stamp}-${token}`;
+};
+
 export default async function handler(req, res) {
   const db = getPool();
 
@@ -60,7 +70,7 @@ export default async function handler(req, res) {
       }
 
       try {
-        const orderId = randomUUID();
+        const orderId = createArtioOrderId();
         const now = nowIso();
         const orderItems = items.map((item) => ({
           id: randomUUID(),

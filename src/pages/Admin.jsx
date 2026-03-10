@@ -124,6 +124,7 @@ const toRenderableImageSrc = (value) => {
   return `/${trimmed}`;
 };
 import { useEffect, useState } from 'react';
+import { motion } from 'framer-motion';
 import Card from '../components/ui/Card';
 import Button from '../components/ui/Button';
 import Input from '../components/ui/Input';
@@ -176,6 +177,8 @@ const emptyCategory = {
   display_order: 0,
 };
 
+const toCurrency = (value) => `$${Number(value || 0).toFixed(2)}`;
+
 const Admin = () => {
     const [productImageFiles, setProductImageFiles] = useState([]);
     const [imagePreviews, setImagePreviews] = useState([]);
@@ -204,6 +207,15 @@ const Admin = () => {
     { id: 'orders', label: 'Orders' },
     { id: 'products', label: 'Products' },
     { id: 'users', label: 'Users' },
+  ];
+
+  const paidOrders = orders.filter((order) => String(order.payment_status || '').toLowerCase() === 'paid').length;
+  const totalRevenue = orders.reduce((sum, order) => sum + Number(order.total_amount || 0), 0);
+  const summaryCards = [
+    { label: 'Total Orders', value: String(orders.length), hint: `${paidOrders} paid` },
+    { label: 'Live Products', value: String(products.filter((item) => item.is_active).length), hint: `${products.length} total` },
+    { label: 'Categories', value: String(categories.length), hint: 'Catalog structure' },
+    { label: 'Revenue', value: toCurrency(totalRevenue), hint: 'Across all orders' },
   ];
 
   const loadOrders = async () => {
@@ -357,21 +369,59 @@ const Admin = () => {
     }
   };
 
+  const getCustomerName = (order) => {
+    const shippingName = String(order?.shipping_address?.full_name || '').trim();
+    if (shippingName) {
+      return shippingName;
+    }
+
+    const matchedUser = users.find((row) => String(row.id || '').trim() === String(order?.user_id || '').trim());
+    if (matchedUser?.full_name) {
+      return matchedUser.full_name;
+    }
+    if (matchedUser?.email) {
+      return matchedUser.email;
+    }
+
+    return 'Customer name unavailable';
+  };
+
   return (
-    <div className="min-h-screen pt-36 lg:pt-40 pb-16 font-space-grotesk bg-gradient-to-br from-slate-50 via-white to-slate-100 dark:from-[#03050a] dark:via-[#02040a] dark:to-[#050910]">
+    <div className="min-h-screen pt-36 lg:pt-40 pb-16 font-space-grotesk bg-gradient-to-br from-[#eef7f6] via-[#f7fbfb] to-[#e9f0f6] dark:from-[#03050a] dark:via-[#02040a] dark:to-[#050910]">
+      <div className="pointer-events-none fixed inset-0 -z-10 overflow-hidden">
+        <div className="absolute -top-24 -left-24 h-72 w-72 rounded-full bg-teal-200/40 blur-3xl dark:bg-teal-500/10" />
+        <div className="absolute top-1/3 -right-24 h-80 w-80 rounded-full bg-sky-200/40 blur-3xl dark:bg-sky-500/10" />
+      </div>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between mb-8 rounded-2xl border border-slate-200/80 dark:border-white/10 bg-white/75 dark:bg-white/[0.03] backdrop-blur-xl px-5 py-4">
-          <div>
-            <p className="text-[11px] tracking-[0.24em] uppercase text-slate-500 dark:text-slate-300">Artio Control Center</p>
-            <h1 className="mt-2 text-4xl font-semibold tracking-tight text-slate-900 dark:text-white">Admin Dashboard</h1>
-            <p className="text-slate-600 dark:text-slate-300 mt-1">
-              Manage orders, products, and users.
-            </p>
+        <motion.div
+          initial={{ opacity: 0, y: 18 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.45 }}
+          className="mb-8 rounded-3xl border border-slate-200/80 dark:border-white/10 bg-white/80 dark:bg-white/[0.03] backdrop-blur-xl px-6 py-6 shadow-[0_20px_45px_rgba(15,23,42,0.08)] dark:shadow-[0_20px_45px_rgba(0,0,0,0.35)]"
+        >
+          <div className="flex flex-wrap items-start justify-between gap-5">
+            <div>
+              <p className="text-[11px] tracking-[0.24em] uppercase text-slate-500 dark:text-slate-300">Artio Control Center</p>
+              <h1 className="mt-2 text-3xl sm:text-4xl font-semibold tracking-tight text-slate-900 dark:text-white">Admin Dashboard</h1>
+              <p className="text-slate-600 dark:text-slate-300 mt-1">
+                Manage orders, products, categories, and customer accounts.
+              </p>
+            </div>
+            <Button variant="outline" className="rounded-full px-5" onClick={refreshAll}>
+              Refresh Data
+            </Button>
           </div>
-          <Button variant="outline" className="rounded-full px-5" onClick={refreshAll}>
-            Refresh
-          </Button>
-        </div>
+
+          <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3">
+            {summaryCards.map((card) => (
+              <div key={card.label} className="rounded-2xl border border-slate-200/90 dark:border-white/10 bg-white/85 dark:bg-white/[0.03] px-4 py-3">
+                <p className="text-[11px] tracking-[0.16em] uppercase text-slate-500 dark:text-slate-400">{card.label}</p>
+                <p className="mt-1 text-2xl font-semibold text-slate-900 dark:text-white">{card.value}</p>
+                <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">{card.hint}</p>
+              </div>
+            ))}
+          </div>
+        </motion.div>
 
         {error && (
           <div className="mb-6 p-4 rounded-xl bg-rose-50/95 dark:bg-rose-900/20 border border-rose-200 dark:border-rose-700/40">
@@ -386,7 +436,7 @@ const Admin = () => {
               onClick={() => setActiveTab(tab.id)}
               className={`px-4 py-2.5 rounded-full text-xs font-semibold tracking-[0.12em] uppercase transition-colors border ${
                 activeTab === tab.id
-                  ? 'bg-slate-900 dark:bg-amber-300 text-white dark:text-black border-slate-900 dark:border-amber-300'
+                  ? 'bg-slate-900 dark:bg-amber-300 text-white dark:text-black border-slate-900 dark:border-amber-300 shadow-[0_8px_20px_rgba(15,23,42,0.2)]'
                   : 'bg-white/90 dark:bg-white/[0.03] border-slate-200 dark:border-white/15 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-white/[0.06]'
               }`}
             >
@@ -396,25 +446,25 @@ const Admin = () => {
         </div>
 
         {loading ? (
-          <Card className="p-8 rounded-2xl border border-slate-200 dark:border-white/10 bg-white/80 dark:bg-white/[0.03]">
+          <Card className="p-8 rounded-3xl border border-slate-200 dark:border-white/10 bg-white/80 dark:bg-white/[0.03] shadow-[0_20px_45px_rgba(15,23,42,0.08)] dark:shadow-[0_20px_45px_rgba(0,0,0,0.35)]">
             <p className="text-slate-600 dark:text-slate-300">Loading data...</p>
           </Card>
         ) : (
           <>
             {activeTab === 'orders' && (
-              <Card className="p-6 rounded-2xl border border-slate-200 dark:border-white/10 bg-white/80 dark:bg-white/[0.03]">
+              <Card className="p-6 rounded-3xl border border-slate-200 dark:border-white/10 bg-white/80 dark:bg-white/[0.03] shadow-[0_20px_45px_rgba(15,23,42,0.08)] dark:shadow-[0_20px_45px_rgba(0,0,0,0.35)]">
                 <h2 className="text-2xl font-semibold mb-4 text-slate-900 dark:text-white">Orders</h2>
                 <div className="space-y-4">
                   {orders.length === 0 ? (
                     <p className="text-slate-600 dark:text-slate-300">No orders yet.</p>
                   ) : (
                     orders.map((order) => (
-                      <div key={order.id} className="p-4 rounded-xl border border-slate-200 dark:border-white/10 bg-white/85 dark:bg-white/[0.02]">
+                      <div key={order.id} className="p-4 rounded-2xl border border-slate-200 dark:border-white/10 bg-white/85 dark:bg-white/[0.02] transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[0_12px_24px_rgba(15,23,42,0.1)] dark:hover:shadow-[0_12px_24px_rgba(0,0,0,0.3)]">
                         <div className="flex flex-wrap items-center justify-between gap-4">
                           <div>
                             <p className="font-semibold text-slate-900 dark:text-white">Order {order.id}</p>
                             <p className="text-sm text-slate-600 dark:text-slate-300">
-                              User: {order.user_id}
+                              Customer: {getCustomerName(order)}
                             </p>
                             <p className="text-sm text-slate-600 dark:text-slate-300">
                               Total: ${Number(order.total_amount).toFixed(2)}
@@ -422,7 +472,7 @@ const Admin = () => {
                           </div>
                           <div className="flex items-center gap-3">
                             <select
-                              className="border border-slate-200 dark:border-white/15 bg-white dark:bg-black/50 rounded-lg px-3 py-2 text-sm text-slate-700 dark:text-slate-200"
+                              className="border border-slate-200 dark:border-white/15 bg-white dark:bg-black/50 rounded-xl px-3 py-2 text-sm text-slate-700 dark:text-slate-200"
                               value={order.status}
                               onChange={(e) => updateOrder(order.id, { status: e.target.value })}
                             >
@@ -432,7 +482,7 @@ const Admin = () => {
                               <option value="cancelled">cancelled</option>
                             </select>
                             <select
-                              className="border border-slate-200 dark:border-white/15 bg-white dark:bg-black/50 rounded-lg px-3 py-2 text-sm text-slate-700 dark:text-slate-200"
+                              className="border border-slate-200 dark:border-white/15 bg-white dark:bg-black/50 rounded-xl px-3 py-2 text-sm text-slate-700 dark:text-slate-200"
                               value={order.payment_status || 'unpaid'}
                               onChange={(e) => updateOrder(order.id, { payment_status: e.target.value })}
                             >
@@ -454,7 +504,7 @@ const Admin = () => {
 
             {activeTab === 'products' && (
               <div className="space-y-6">
-                <Card className="p-6 rounded-2xl border border-slate-200 dark:border-white/10 bg-white/80 dark:bg-white/[0.03]">
+                <Card className="p-6 rounded-3xl border border-slate-200 dark:border-white/10 bg-white/80 dark:bg-white/[0.03] shadow-[0_20px_45px_rgba(15,23,42,0.08)] dark:shadow-[0_20px_45px_rgba(0,0,0,0.35)]">
                   <div className="flex items-center justify-between mb-4">
                     <h2 className="text-2xl font-semibold text-slate-900 dark:text-white">Products</h2>
                     <Button size="sm" className="rounded-full" onClick={() => openProductModal(null)}>
@@ -466,7 +516,7 @@ const Admin = () => {
                       <p className="text-slate-600 dark:text-slate-300">No products yet.</p>
                     ) : (
                       products.map((product) => (
-                        <div key={product.id} className="p-4 rounded-xl border border-slate-200 dark:border-white/10 bg-white/85 dark:bg-white/[0.02]">
+                        <div key={product.id} className="p-4 rounded-2xl border border-slate-200 dark:border-white/10 bg-white/85 dark:bg-white/[0.02] transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[0_12px_24px_rgba(15,23,42,0.1)] dark:hover:shadow-[0_12px_24px_rgba(0,0,0,0.3)]">
                           <div className="flex flex-wrap items-center justify-between gap-4">
                             <div>
                               <p className="font-semibold text-slate-900 dark:text-white">{product.name}</p>
@@ -496,7 +546,7 @@ const Admin = () => {
                   </div>
                 </Card>
 
-                <Card className="p-6 rounded-2xl border border-slate-200 dark:border-white/10 bg-white/80 dark:bg-white/[0.03]">
+                <Card className="p-6 rounded-3xl border border-slate-200 dark:border-white/10 bg-white/80 dark:bg-white/[0.03] shadow-[0_20px_45px_rgba(15,23,42,0.08)] dark:shadow-[0_20px_45px_rgba(0,0,0,0.35)]">
                   <div className="flex items-center justify-between mb-4">
                     <h2 className="text-2xl font-semibold text-slate-900 dark:text-white">Categories</h2>
                     <Button size="sm" className="rounded-full" onClick={() => openCategoryModal(null)}>
@@ -508,7 +558,7 @@ const Admin = () => {
                       <p className="text-slate-600 dark:text-slate-300">No categories yet.</p>
                     ) : (
                       categories.map((category) => (
-                        <div key={category.id} className="p-4 rounded-xl border border-slate-200 dark:border-white/10 bg-white/85 dark:bg-white/[0.02]">
+                        <div key={category.id} className="p-4 rounded-2xl border border-slate-200 dark:border-white/10 bg-white/85 dark:bg-white/[0.02] transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[0_12px_24px_rgba(15,23,42,0.1)] dark:hover:shadow-[0_12px_24px_rgba(0,0,0,0.3)]">
                           <div className="flex flex-wrap items-center justify-between gap-4">
                             <div>
                               <p className="font-semibold text-slate-900 dark:text-white">{category.name}</p>
@@ -536,14 +586,14 @@ const Admin = () => {
             )}
 
             {activeTab === 'users' && (
-              <Card className="p-6 rounded-2xl border border-slate-200 dark:border-white/10 bg-white/80 dark:bg-white/[0.03]">
+              <Card className="p-6 rounded-3xl border border-slate-200 dark:border-white/10 bg-white/80 dark:bg-white/[0.03] shadow-[0_20px_45px_rgba(15,23,42,0.08)] dark:shadow-[0_20px_45px_rgba(0,0,0,0.35)]">
                 <h2 className="text-2xl font-semibold mb-4 text-slate-900 dark:text-white">Users</h2>
                 <div className="space-y-4">
                   {users.length === 0 ? (
                     <p className="text-slate-600 dark:text-slate-300">No users yet.</p>
                   ) : (
                     users.map((user) => (
-                      <div key={user.id} className="p-4 rounded-xl border border-slate-200 dark:border-white/10 bg-white/85 dark:bg-white/[0.02]">
+                      <div key={user.id} className="p-4 rounded-2xl border border-slate-200 dark:border-white/10 bg-white/85 dark:bg-white/[0.02] transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[0_12px_24px_rgba(15,23,42,0.1)] dark:hover:shadow-[0_12px_24px_rgba(0,0,0,0.3)]">
                         <div className="flex flex-wrap items-center justify-between gap-4">
                           <div>
                             <p className="font-semibold text-slate-900 dark:text-white">{user.full_name || 'No name'}</p>
@@ -552,7 +602,7 @@ const Admin = () => {
                           </div>
                           <div className="flex items-center gap-2">
                             <select
-                              className="border border-slate-200 dark:border-white/15 bg-white dark:bg-black/50 rounded-lg px-3 py-2 text-sm text-slate-700 dark:text-slate-200"
+                              className="border border-slate-200 dark:border-white/15 bg-white dark:bg-black/50 rounded-xl px-3 py-2 text-sm text-slate-700 dark:text-slate-200"
                               value={user.role || 'user'}
                               onChange={(e) => updateUserRole(user.id, e.target.value)}
                             >
@@ -783,39 +833,75 @@ const Admin = () => {
         size="lg"
       >
         {selectedOrder && (
-          <div className="space-y-4">
-            <div className="p-4 rounded-lg bg-gray-100 dark:bg-gray-800">
-              <p className="text-sm text-gray-500 dark:text-gray-400">Order ID</p>
-              <p className="font-semibold break-all">{selectedOrder.id}</p>
-              <p className="text-sm text-gray-600 dark:text-gray-400">User: {selectedOrder.user_id}</p>
-              <p className="text-sm text-gray-600 dark:text-gray-400">
-                Total: ${Number(selectedOrder.total_amount).toFixed(2)}
-              </p>
-              <p className="text-sm text-gray-600 dark:text-gray-400">Status: {selectedOrder.status}</p>
-              <p className="text-sm text-gray-600 dark:text-gray-400">
-                Payment: {selectedOrder.payment_status || 'unpaid'}
-              </p>
+          <div className="space-y-5">
+            <div className="rounded-2xl border border-slate-200 dark:border-white/10 bg-gradient-to-br from-slate-50 to-white dark:from-white/[0.05] dark:to-white/[0.02] p-4">
+              <p className="text-[11px] tracking-[0.16em] uppercase text-slate-500 dark:text-slate-400">Order Overview</p>
+              <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div className="rounded-xl border border-slate-200 dark:border-white/10 bg-white/85 dark:bg-black/40 px-3 py-2.5">
+                  <p className="text-xs text-slate-500 dark:text-slate-400">Order ID</p>
+                  <p className="text-sm font-semibold text-slate-900 dark:text-white break-all">{selectedOrder.id}</p>
+                </div>
+                <div className="rounded-xl border border-slate-200 dark:border-white/10 bg-white/85 dark:bg-black/40 px-3 py-2.5">
+                  <p className="text-xs text-slate-500 dark:text-slate-400">Customer</p>
+                  <p className="text-sm font-medium text-slate-800 dark:text-slate-100 break-all">{getCustomerName(selectedOrder)}</p>
+                </div>
+                <div className="rounded-xl border border-slate-200 dark:border-white/10 bg-white/85 dark:bg-black/40 px-3 py-2.5">
+                  <p className="text-xs text-slate-500 dark:text-slate-400">Order Status</p>
+                  <p className="text-sm font-semibold capitalize text-slate-900 dark:text-white">{selectedOrder.status || 'pending'}</p>
+                </div>
+                <div className="rounded-xl border border-slate-200 dark:border-white/10 bg-white/85 dark:bg-black/40 px-3 py-2.5">
+                  <p className="text-xs text-slate-500 dark:text-slate-400">Payment</p>
+                  <p className="text-sm font-semibold capitalize text-slate-900 dark:text-white">{selectedOrder.payment_status || 'unpaid'}</p>
+                </div>
+              </div>
+              <div className="mt-3 rounded-xl border border-slate-200 dark:border-white/10 bg-slate-900 dark:bg-amber-300 px-3 py-2.5 flex items-center justify-between">
+                <span className="text-xs tracking-[0.14em] uppercase text-white/70 dark:text-black/70">Total Amount</span>
+                <span className="text-lg font-semibold text-white dark:text-black">{toCurrency(selectedOrder.total_amount)}</span>
+              </div>
             </div>
+
             <div>
-              <h3 className="font-semibold mb-2">Shipping Address</h3>
-              <pre className="text-sm text-gray-600 dark:text-gray-400 whitespace-pre-wrap">
-                {JSON.stringify(selectedOrder.shipping_address, null, 2)}
-              </pre>
+              <h3 className="font-semibold mb-2 text-slate-900 dark:text-white">Shipping Address</h3>
+              <div className="rounded-2xl border border-slate-200 dark:border-white/10 bg-white/70 dark:bg-white/[0.02] p-4 space-y-1.5 text-sm text-slate-700 dark:text-slate-300">
+                <p><span className="font-medium text-slate-900 dark:text-white">Name:</span> {selectedOrder.shipping_address?.full_name || '-'}</p>
+                <p><span className="font-medium text-slate-900 dark:text-white">Phone:</span> {selectedOrder.shipping_address?.phone || '-'}</p>
+                <p><span className="font-medium text-slate-900 dark:text-white">Address 1:</span> {selectedOrder.shipping_address?.address_line1 || '-'}</p>
+                {selectedOrder.shipping_address?.address_line2 ? (
+                  <p><span className="font-medium text-slate-900 dark:text-white">Address 2:</span> {selectedOrder.shipping_address.address_line2}</p>
+                ) : null}
+                <p>
+                  <span className="font-medium text-slate-900 dark:text-white">City / State:</span>{' '}
+                  {selectedOrder.shipping_address?.city || '-'}{selectedOrder.shipping_address?.state ? `, ${selectedOrder.shipping_address.state}` : ''}
+                </p>
+                <p><span className="font-medium text-slate-900 dark:text-white">Postal:</span> {selectedOrder.shipping_address?.postal_code || '-'}</p>
+                <p><span className="font-medium text-slate-900 dark:text-white">Country:</span> {selectedOrder.shipping_address?.country || '-'}</p>
+              </div>
             </div>
+
             <div>
-              <h3 className="font-semibold mb-2">Items</h3>
+              <h3 className="font-semibold mb-2 text-slate-900 dark:text-white">Items</h3>
               <div className="space-y-2">
                 {(selectedOrder.order_items || []).map((item) => (
-                  <div key={item.id} className="flex items-center gap-3 text-sm text-gray-600 dark:text-gray-400">
-                    {item.products?.image_path && (
-                      <img
-                        src={toRenderableImageSrc(item.products.image_path)}
-                        alt={item.products?.name || 'Product'}
-                        className="w-12 h-12 object-cover rounded border"
-                        style={{ aspectRatio: '1/1' }}
-                      />
-                    )}
-                    <span>{item.products?.name || 'Product'} · {item.quantity} × ${item.price_at_purchase}</span>
+                  <div key={item.id} className="flex items-center justify-between gap-3 rounded-xl border border-slate-200 dark:border-white/10 bg-white/75 dark:bg-white/[0.02] p-3">
+                    <div className="flex items-center gap-3 min-w-0">
+                      {item.products?.image_path ? (
+                        <img
+                          src={toRenderableImageSrc(item.products.image_path)}
+                          alt={item.products?.name || 'Product'}
+                          className="w-12 h-12 object-cover rounded-lg border border-slate-200 dark:border-white/10"
+                          style={{ aspectRatio: '1/1' }}
+                        />
+                      ) : (
+                        <div className="w-12 h-12 rounded-lg border border-slate-200 dark:border-white/10 bg-slate-100 dark:bg-slate-800" />
+                      )}
+                      <div className="min-w-0">
+                        <p className="text-sm font-medium text-slate-900 dark:text-white truncate">{item.products?.name || 'Product'}</p>
+                        <p className="text-xs text-slate-500 dark:text-slate-400">Qty {item.quantity} x {toCurrency(item.price_at_purchase)}</p>
+                      </div>
+                    </div>
+                    <p className="text-sm font-semibold text-slate-900 dark:text-white whitespace-nowrap">
+                      {toCurrency(Number(item.quantity || 0) * Number(item.price_at_purchase || 0))}
+                    </p>
                   </div>
                 ))}
               </div>

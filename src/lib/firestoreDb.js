@@ -50,6 +50,16 @@ const normalizeCategoryToken = (value) =>
     .toLowerCase()
     .replace(/^cat[-_]/, '');
 
+const createArtioOrderId = () => {
+  const now = new Date();
+  const y = now.getFullYear();
+  const m = String(now.getMonth() + 1).padStart(2, '0');
+  const d = String(now.getDate()).padStart(2, '0');
+  const stamp = `${y}${m}${d}`;
+  const token = crypto.randomUUID().replace(/-/g, '').slice(0, 8).toUpperCase();
+  return `ARTIO-${stamp}-${token}`;
+};
+
 const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
 const bytesToHex = (bytes) => Array.from(bytes).map((byte) => byte.toString(16).padStart(2, '0')).join('');
@@ -373,8 +383,8 @@ export const createOrder = async ({ userId, items, shippingAddress, totalAmount 
   const db = requireDb();
 
   const ordersCol = collection(db, 'orders');
-  const orderDocRef = doc(ordersCol);
-  const orderId = orderDocRef.id;
+  const orderId = createArtioOrderId();
+  const orderDocRef = doc(ordersCol, orderId);
 
   await runTransaction(db, async (tx) => {
     const orderItems = [];
