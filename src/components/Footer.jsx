@@ -34,6 +34,9 @@ const Footer = () => {
               <Link to="/about" className="text-gray-600 dark:text-gray-400 hover:text-black dark:hover:text-white">
                 About
               </Link>
+              <Link to="/founders-portfolio" className="text-gray-600 dark:text-gray-400 hover:text-black dark:hover:text-white">
+                Founder's Portfolio
+              </Link>
               <Link to="/contact" className="text-gray-600 dark:text-gray-400 hover:text-black dark:hover:text-white">
                 Contact
               </Link>
