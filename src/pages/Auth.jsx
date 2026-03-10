@@ -6,8 +6,75 @@ import Button from '../components/ui/Button';
 import Input from '../components/ui/Input';
 import Card from '../components/ui/Card';
 import emailjs from 'emailjs-com';
+import {
+  createUserWithEmailAndPassword,
+  signInWithEmailAndPassword,
+  updateProfile,
+} from 'firebase/auth';
 import { useAuthStore } from '../store/authStore';
 import { useThemeStore } from '../store/themeStore';
+import { firebaseAuth, isFirebaseConfigured } from '../lib/firebase';
+import { upsertProfile } from '../lib/firestoreDb';
+
+const emailJsServiceId = import.meta.env.VITE_EMAILJS_SERVICE_ID;
+const emailJsTemplateId = import.meta.env.VITE_EMAILJS_TEMPLATE_ID;
+const emailJsPublicKey = import.meta.env.VITE_EMAILJS_PUBLIC_KEY;
+
+const isEmailJsConfigured = Boolean(emailJsServiceId && emailJsTemplateId && emailJsPublicKey);
+
+const mapAuthErrorMessage = (err) => {
+  const code = String(err?.code || '').trim();
+
+  if (code === 'auth/configuration-not-found') {
+    return 'Firebase Authentication is not configured yet. In Firebase Console, enable Authentication and Email/Password sign-in.';
+  }
+
+  if (code === 'auth/operation-not-allowed') {
+    return 'Email/Password sign-in is disabled in Firebase. Enable it in Authentication -> Sign-in method.';
+  }
+
+  if (code === 'auth/invalid-api-key') {
+    return 'Invalid Firebase API key. Check VITE_FIREBASE_API_KEY in .env.';
+  }
+
+  if (code === 'auth/unauthorized-domain') {
+    return 'This domain is not authorized in Firebase Auth. Add localhost to Authentication -> Settings -> Authorized domains.';
+  }
+
+  if (code === 'auth/email-already-in-use') {
+    return 'This email is already registered. Please sign in instead.';
+  }
+
+  if (code === 'auth/invalid-credential' || code === 'auth/wrong-password') {
+    return 'Invalid email or password. Please check and try again.';
+  }
+
+  if (code === 'auth/user-not-found') {
+    return 'No account found for this email. Please create an account first.';
+  }
+
+  if (code === 'auth/invalid-email') {
+    return 'Please enter a valid email address.';
+  }
+
+  if (code === 'auth/weak-password') {
+    return 'Password is too weak. Please use at least 6 characters.';
+  }
+
+  if (code === 'auth/too-many-requests') {
+    return 'Too many attempts. Please wait a moment and try again.';
+  }
+
+  if (code === 'auth/network-request-failed') {
+    return 'Network issue detected. Please check your internet and try again.';
+  }
+
+  if (code === 'auth/missing-password') {
+    return 'Password is required.';
+  }
+
+  return 'Authentication failed. Please try again.';
+};
 
 const Auth = () => {
   const [isLogin, setIsLogin] = useState(true);
@@ -40,30 +107,32 @@ const Auth = () => {
     setLoading(true);
 
     try {
-      if (isLogin) {
-        // TODO: Replace with Neon/pg login logic
-        const storageKey = `artio_user_uuid_${formData.email}`;
-        const existingUuid = localStorage.getItem(storageKey);
-        const userUuid = existingUuid || crypto.randomUUID();
-        if (!existingUuid) {
-          localStorage.setItem(storageKey, userUuid);
-        }
+      if (!isFirebaseConfigured || !firebaseAuth) {
+        throw new Error('Firebase is not configured. Add VITE_FIREBASE_* keys in .env.');
+      }
 
-        await fetch('/api/profile/upsert', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            userId: userUuid,
-            email: formData.email,
-            fullName: '',
-            phone: '',
-          }),
+      if (isLogin) {
+        const credential = await signInWithEmailAndPassword(
+          firebaseAuth,
+          formData.email,
+          formData.password
+        );
+        const firebaseUser = credential.user;
+        const nextUser = {
+          id: firebaseUser.uid,
+          email: firebaseUser.email,
+          fullName: firebaseUser.displayName || '',
+        };
+
+        await upsertProfile({
+          userId: firebaseUser.uid,
+          email: formData.email,
+          fullName: firebaseUser.displayName || '',
+          phone: '',
         });
 
-        const nextUser = { id: userUuid, email: formData.email };
-        localStorage.setItem('artio-auth-user', JSON.stringify(nextUser));
         setUser(nextUser);
-        setSession({});
+        setSession({ uid: firebaseUser.uid });
         await fetchProfile(nextUser);
         navigate('/');
       } else {
@@ -75,13 +144,6 @@ const Auth = () => {
           throw new Error('Phone number is required');
         }
 
-        const storageKey = `artio_user_uuid_${formData.email}`;
-        const existingUuid = localStorage.getItem(storageKey);
-        const userUuid = existingUuid || crypto.randomUUID();
-        if (!existingUuid) {
-          localStorage.setItem(storageKey, userUuid);
-        }
-
         if (formData.password !== formData.confirmPassword) {
           throw new Error('Passwords do not match');
         }
@@ -90,59 +152,66 @@ const Auth = () => {
           throw new Error('Password must be at least 6 characters');
         }
 
-        // Neon signup logic (placeholder)
-        // Generate a verification token
         const verificationToken = Math.random().toString(36).substr(2, 16);
-        // Save user and token to Neon (replace with your Neon REST API call)
-        // await fetch('YOUR_NEON_SIGNUP_ENDPOINT', {
-        //   method: 'POST',
-        //   headers: { 'Content-Type': 'application/json' },
-        //   body: JSON.stringify({
-        //     fullName: formData.fullName,
-        //     phone: formData.phone,
-        //     email: formData.email,
-        //     password: formData.password,
-        //     verificationToken,
-        //   }),
-        // });
 
-        // Send verification email using EmailJS
-        const verificationLink = `${window.location.origin}/verify?token=${verificationToken}`;
-        const templateParams = {
-          email: formData.email,
-          full_name: formData.fullName,
-          verification_link: verificationLink,
-        };
-        await emailjs.send(
-          'service_ypdqd7b', // Your Service ID
-          'template_whb74ht', // Your actual Template ID
-          templateParams,
-          'YOUR_PUBLIC_KEY'   // Replace with your Public Key
+        const credential = await createUserWithEmailAndPassword(
+          firebaseAuth,
+          formData.email,
+          formData.password
         );
+        const firebaseUser = credential.user;
 
-        await fetch('/api/profile/upsert', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            userId: userUuid,
-            email: formData.email,
-            fullName: formData.fullName.trim(),
-            phone: formData.phone.trim(),
-          }),
+        await updateProfile(firebaseUser, {
+          displayName: formData.fullName.trim(),
         });
 
-        const nextUser = { id: userUuid, email: formData.email };
-        localStorage.setItem('artio-auth-user', JSON.stringify(nextUser));
+        if (isEmailJsConfigured) {
+          const verificationLink = `${window.location.origin}/verify?token=${verificationToken}`;
+          const templateParams = {
+            email: formData.email,
+            full_name: formData.fullName,
+            verification_link: verificationLink,
+          };
+
+          try {
+            await emailjs.send(
+              emailJsServiceId,
+              emailJsTemplateId,
+              templateParams,
+              emailJsPublicKey
+            );
+          } catch (emailError) {
+            console.warn('EmailJS send failed:', emailError);
+            setInfo('Account created successfully, but verification email could not be sent right now.');
+          }
+        }
+
+        await upsertProfile({
+          userId: firebaseUser.uid,
+          email: formData.email,
+          fullName: formData.fullName.trim(),
+          phone: formData.phone.trim(),
+        });
+
+        const nextUser = {
+          id: firebaseUser.uid,
+          email: firebaseUser.email,
+          fullName: formData.fullName.trim(),
+        };
         setUser(nextUser);
-        setSession({});
+        setSession({ uid: firebaseUser.uid });
         await fetchProfile(nextUser);
         navigate('/');
 
-        setInfo('Signup successful! Please check your email to verify your account.');
+        if (isEmailJsConfigured) {
+          setInfo('Signup successful! Please check your email to verify your account.');
+        } else {
+          setInfo('Signup successful! Configure EmailJS keys to enable verification emails.');
+        }
         setError('');
       }
     } catch (err) {
-      setError(err.message);
+      setError(mapAuthErrorMessage(err));
     } finally {
       setLoading(false);
     }
@@ -159,7 +228,7 @@ const Auth = () => {
 
   return (
     // ...existing code...
-    <div className="min-h-screen pt-16 flex items-center justify-center bg-gradient-to-br from-gray-50 via-white to-gray-100 dark:from-gray-950 dark:via-black dark:to-gray-900">
+    <div className="min-h-screen pt-28 flex items-center justify-center bg-gradient-to-br from-gray-50 via-white to-gray-100 dark:from-gray-950 dark:via-black dark:to-gray-900">
       <div className="w-full max-w-md px-4 py-12">
         <motion.div
           initial={{ opacity: 0, y: 20 }}

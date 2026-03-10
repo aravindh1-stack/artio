@@ -17,11 +17,11 @@ const Header = () => {
   const { isDark, toggleTheme } = useThemeStore();
   const { user, signOut, role } = useAuthStore();
 
-  const navigation = getNavigation(role);
+  const navigation = getNavigation(role, user);
   const isActive = (path: string) => location.pathname === path;
 
   return (
-    <header className="fixed top-12 left-0 right-0 z-30 bg-transparent">
+    <header className="fixed top-16 left-0 right-0 z-30 bg-transparent">
       <nav className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
         <div className="flex items-center justify-between gap-2 lg:gap-3">
           <DesktopLeftSection

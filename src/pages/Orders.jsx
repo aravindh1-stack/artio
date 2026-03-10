@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../store/authStore';
 import Card from '../components/ui/Card';
 import Button from '../components/ui/Button';
+import { getOrders } from '../lib/firestoreDb';
 
 const Orders = () => {
   const { user, loading } = useAuthStore();
@@ -19,18 +20,14 @@ const Orders = () => {
     }
   }, [loading, user, navigate]);
 
-  // Neon DB-la irundhu orders fetch panna
+  // Fetch user orders directly from Firestore.
   useEffect(() => {
     const fetchOrders = async () => {
       if (!user) return;
       
       try {
         const userId = user.id || user.email;
-        const response = await fetch(`/api/admin/orders?userId=${encodeURIComponent(userId)}`);
-        const data = await response.json();
-        if (!response.ok) {
-          throw new Error(data.error || 'Failed to load orders');
-        }
+        const data = await getOrders({ userId });
         setOrders(Array.isArray(data) ? data : []);
       } catch (err) {
         setError(err.message || 'Orders fetch panna mudiyala. Check connection.');
@@ -46,7 +43,7 @@ const Orders = () => {
     
     try {
       // 1. Backend-ku request anupuvom (Signed URL kekka)
-      // 2. Neon-la payment status 'paid'-ah irundha backend signed URL tharum
+      // 2. Backend checks payment status before returning a signed URL.
       // 3. Adha use panni download start pannuvom
       
       console.log(`Downloading high-res poster for product: ${productId}`);

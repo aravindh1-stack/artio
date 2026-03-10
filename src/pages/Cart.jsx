@@ -7,6 +7,14 @@ import Card from '../components/ui/Card';
 import Input from '../components/ui/Input';
 import { useCartStore } from '../store/cartStore';
 import { useAuthStore } from '../store/authStore';
+import {
+  createOrder,
+  deleteUserAddress,
+  getAddressesByUser,
+  saveUserAddress,
+  setDefaultAddress,
+  upsertProfile,
+} from '../lib/firestoreDb';
 
 const Cart = () => {
   const { items, removeItem, updateQuantity, getTotal, clearCart } = useCartStore();
@@ -49,26 +57,7 @@ const Cart = () => {
     email: 'officialartio375@gmail.com',
   };
 
-  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
-  const resolveUserId = () => {
-    const directId = user?.id || '';
-    if (uuidRegex.test(directId)) {
-      return directId;
-    }
-
-    const identity = user?.email || 'guest';
-    const storageKey = `artio_user_uuid_${identity}`;
-    const stored = localStorage.getItem(storageKey);
-    if (stored && uuidRegex.test(stored)) {
-      return stored;
-    }
-
-    const created = crypto.randomUUID();
-    localStorage.setItem(storageKey, created);
-    return created;
-  };
-
-  const currentUserId = user ? resolveUserId() : '';
+  const currentUserId = user?.id || '';
 
   const mapAddress = (address) => ({
     id: address?.id ?? '',
@@ -92,12 +81,7 @@ const Cart = () => {
       return;
     }
 
-    const response = await fetch(`/api/addresses?userId=${encodeURIComponent(userId)}`);
-    const data = await response.json();
-
-    if (!response.ok) {
-      throw new Error(data.error || 'Unable to load addresses.');
-    }
+    const data = await getAddressesByUser(userId);
 
     const mapped = Array.isArray(data) ? data.map(mapAddress).filter((address) => address.id) : [];
     setAddresses(mapped);
@@ -203,38 +187,25 @@ const Cart = () => {
     setIsSavingAddress(true);
 
     try {
-      const response = await fetch('/api/address/save', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          userId: currentUserId,
-          addressId: editingAddressId || null,
-          fullName: addressForm.fullName.trim(),
-          phone: addressForm.phone.trim(),
-          line1: addressForm.line1.trim(),
-          line2: addressForm.line2.trim(),
-          city: addressForm.city.trim(),
-          state: addressForm.state.trim(),
-          postalCode: addressForm.postalCode.trim(),
-          country: addressForm.country.trim(),
-          isDefault: setDefaultOnSave || addresses.length === 0,
-        }),
+      const data = await saveUserAddress({
+        userId: currentUserId,
+        addressId: editingAddressId || null,
+        fullName: addressForm.fullName.trim(),
+        phone: addressForm.phone.trim(),
+        line1: addressForm.line1.trim(),
+        line2: addressForm.line2.trim(),
+        city: addressForm.city.trim(),
+        state: addressForm.state.trim(),
+        postalCode: addressForm.postalCode.trim(),
+        country: addressForm.country.trim(),
+        isDefault: setDefaultOnSave || addresses.length === 0,
       });
-      const data = await response.json();
 
-      if (!response.ok) {
-        throw new Error(data.error || 'Unable to save address.');
-      }
-
-      await fetch('/api/profile/upsert', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          userId: currentUserId,
-          email: user?.email || `${currentUserId}@local.artio`,
-          fullName: addressForm.fullName.trim(),
-          phone: addressForm.phone.trim(),
-        }),
+      await upsertProfile({
+        userId: currentUserId,
+        email: user?.email || `${currentUserId}@local.artio`,
+        fullName: addressForm.fullName.trim(),
+        phone: addressForm.phone.trim(),
       });
 
       setShowAddressForm(false);
@@ -257,16 +228,7 @@ const Cart = () => {
     }
 
     try {
-      const response = await fetch('/api/address/set-default', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId: currentUserId, addressId }),
-      });
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || 'Unable to update default address.');
-      }
+      await setDefaultAddress(currentUserId, addressId);
 
       setSelectedAddressId(addressId);
       await loadAddresses(currentUserId);
@@ -284,16 +246,7 @@ const Cart = () => {
     }
 
     try {
-      const response = await fetch('/api/address/delete', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId: currentUserId, addressId }),
-      });
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || 'Unable to delete address.');
-      }
+      await deleteUserAddress(currentUserId, addressId);
 
       if (selectedAddressId === addressId) {
         setSelectedAddressId('');
@@ -343,30 +296,21 @@ const Cart = () => {
       setPlacingOrder(true);
 
       try {
-        const response = await fetch('/api/admin/orders', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            userId: currentUserId,
-            items,
-            shippingAddress: {
-              full_name: selectedAddress.fullName,
-              phone: selectedAddress.phone,
-              address_line1: selectedAddress.line1,
-              address_line2: selectedAddress.line2,
-              city: selectedAddress.city,
-              state: selectedAddress.state,
-              postal_code: selectedAddress.postalCode,
-              country: selectedAddress.country,
-            },
-            totalAmount: totalWithTax,
-          }),
+        const data = await createOrder({
+          userId: currentUserId,
+          items,
+          shippingAddress: {
+            full_name: selectedAddress.fullName,
+            phone: selectedAddress.phone,
+            address_line1: selectedAddress.line1,
+            address_line2: selectedAddress.line2,
+            city: selectedAddress.city,
+            state: selectedAddress.state,
+            postal_code: selectedAddress.postalCode,
+            country: selectedAddress.country,
+          },
+          totalAmount: totalWithTax,
         });
-
-        const data = await response.json();
-        if (!response.ok) {
-          throw new Error(data.error || 'Order failed. Please try again.');
-        }
 
         setOrderId(data.id);
         setOrderSummary(items.map((item) => ({
@@ -425,7 +369,7 @@ const Cart = () => {
     )}&body=${encodeURIComponent(emailBody)}`;
 
     return (
-      <div className="min-h-screen pt-16 flex items-center justify-center bg-gradient-to-br from-gray-50 via-white to-gray-100 dark:from-gray-950 dark:via-black dark:to-gray-900">
+      <div className="min-h-screen pt-28 flex items-center justify-center bg-gradient-to-br from-gray-50 via-white to-gray-100 dark:from-gray-950 dark:via-black dark:to-gray-900">
         <div className="max-w-2xl w-full px-4 py-12">
           <Card className="p-8">
             <h1 className="text-3xl font-bold mb-3">Order placed</h1>
@@ -492,7 +436,7 @@ const Cart = () => {
 
   if (items.length === 0) {
     return (
-      <div className="min-h-screen pt-16 flex items-center justify-center bg-gradient-to-br from-gray-50 via-white to-gray-100 dark:from-gray-950 dark:via-black dark:to-gray-900">
+      <div className="min-h-screen pt-28 flex items-center justify-center bg-gradient-to-br from-gray-50 via-white to-gray-100 dark:from-gray-950 dark:via-black dark:to-gray-900">
         <div className="text-center px-4">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -513,7 +457,7 @@ const Cart = () => {
   }
 
   return (
-    <div className="min-h-screen pt-16 bg-gray-50 dark:bg-gray-950">
+    <div className="min-h-screen pt-28 bg-gray-50 dark:bg-gray-950">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         <motion.div
           initial={{ opacity: 0, y: 20 }}

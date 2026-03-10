@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { ShoppingCart, Eye, Filter } from 'lucide-react';
@@ -6,11 +6,93 @@ import Card from '../components/ui/Card';
 import Button from '../components/ui/Button';
 import Modal from '../components/ui/Modal';
 import { useCartStore } from '../store/cartStore';
+import { getPublicCategories, getPublicProducts } from '../lib/firestoreDb';
+
+const fallbackCategories = [
+  {
+    id: 'cat-featured',
+    name: 'Featured',
+    slug: 'featured',
+    image_path:
+      'https://images.unsplash.com/photo-1513519245088-0e12902e5a38?auto=format&fit=crop&w=120&q=70',
+  },
+  {
+    id: 'cat-abstract',
+    name: 'Abstract',
+    slug: 'abstract',
+    image_path:
+      'https://images.unsplash.com/photo-1577083552431-6e5fd01988f1?auto=format&fit=crop&w=120&q=70',
+  },
+  {
+    id: 'cat-minimal',
+    name: 'Minimal',
+    slug: 'minimal',
+    image_path:
+      'https://images.unsplash.com/photo-1505693416388-ac5ce068fe85?auto=format&fit=crop&w=120&q=70',
+  },
+];
+
+const fallbackProducts = [
+  {
+    id: 'prd-1',
+    category_id: 'cat-featured',
+    name: 'Midnight Geometry',
+    description: 'A bold geometric composition designed for statement interiors.',
+    price: 149,
+    image_path:
+      'https://images.unsplash.com/photo-1545239351-1141bd82e8a6?auto=format&fit=crop&w=1200&q=80',
+    dimensions: '24 x 36 in',
+    stock_quantity: 14,
+    categories: { name: 'Featured' },
+  },
+  {
+    id: 'prd-2',
+    category_id: 'cat-abstract',
+    name: 'Amber Motion',
+    description: 'Warm abstract gradients that bring depth and rhythm to modern spaces.',
+    price: 179,
+    image_path:
+      'https://images.unsplash.com/photo-1578301978693-85fa9c0320b9?auto=format&fit=crop&w=1200&q=80',
+    dimensions: '30 x 40 in',
+    stock_quantity: 9,
+    categories: { name: 'Abstract' },
+  },
+  {
+    id: 'prd-3',
+    category_id: 'cat-minimal',
+    name: 'Quiet Horizon',
+    description: 'Minimal tonal artwork curated for calm and elevated environments.',
+    price: 129,
+    image_path:
+      'https://images.unsplash.com/photo-1519710164239-da123dc03ef4?auto=format&fit=crop&w=1200&q=80',
+    dimensions: '20 x 30 in',
+    stock_quantity: 18,
+    categories: { name: 'Minimal' },
+  },
+  {
+    id: 'prd-4',
+    category_id: 'cat-featured',
+    name: 'Studio Contrast',
+    description: 'High-contrast visual print with gallery-grade detail and texture.',
+    price: 199,
+    image_path:
+      'https://images.unsplash.com/photo-1579783902614-a3fb3927b6a5?auto=format&fit=crop&w=1200&q=80',
+    dimensions: '32 x 48 in',
+    stock_quantity: 7,
+    categories: { name: 'Featured' },
+  },
+];
+
+const normalizeCategoryToken = (value) =>
+  String(value || '')
+    .trim()
+    .toLowerCase()
+    .replace(/^cat[-_]/, '');
 
 const Store = () => {
-  const [products, setProducts] = useState([]);
+  const [allProducts, setAllProducts] = useState([]);
   const [categories, setCategories] = useState([]);
-  const [selectedCategoryId, setSelectedCategoryId] = useState(null);
+  const [selectedCategorySlug, setSelectedCategorySlug] = useState('all');
   const [quickViewProduct, setQuickViewProduct] = useState(null);
   const [isBlurred, setIsBlurred] = useState(false);
   const [searchParams] = useSearchParams();
@@ -24,20 +106,20 @@ const Store = () => {
 
   useEffect(() => {
     const categorySlug = searchParams.get('category');
-    if (!categorySlug) {
-      setSelectedCategoryId(null);
+    if (!categorySlug || categorySlug === 'all') {
+      setSelectedCategorySlug('all');
       return;
     }
 
     const match = categories.find((category) => category.slug === categorySlug);
     if (match) {
-      setSelectedCategoryId(match.id);
+      setSelectedCategorySlug(match.slug);
     }
   }, [categories, searchParams]);
 
   useEffect(() => {
     fetchProducts();
-  }, [selectedCategoryId]);
+  }, []);
 
   useEffect(() => {
     const handleVisibility = () => setIsBlurred(document.hidden);
@@ -57,30 +139,52 @@ const Store = () => {
 
   const fetchCategories = async () => {
     try {
-      const response = await fetch('/api/admin/categories');
-      const data = await response.json();
-      if (!response.ok) {
-        throw new Error(data.error || 'Failed to load categories');
-      }
-      setCategories(Array.isArray(data) ? data : []);
-    } catch {
-      setCategories([]);
+      const data = await getPublicCategories();
+      const mapped = Array.isArray(data) ? data : [];
+      setCategories(mapped.length > 0 ? mapped : fallbackCategories);
+    } catch (error) {
+      console.error('Failed to fetch categories:', error);
+      setCategories(fallbackCategories);
     }
   };
 
   const fetchProducts = async () => {
     try {
-      const query = selectedCategoryId ? `?categoryId=${encodeURIComponent(selectedCategoryId)}` : '';
-      const response = await fetch(`/api/admin/products${query}`);
-      const data = await response.json();
-      if (!response.ok) {
-        throw new Error(data.error || 'Failed to load products');
-      }
-      setProducts(Array.isArray(data) ? data : []);
-    } catch {
-      setProducts([]);
+      const data = await getPublicProducts();
+      const mapped = Array.isArray(data) ? data : [];
+      setAllProducts(mapped.length > 0 ? mapped : fallbackProducts);
+    } catch (error) {
+      console.error('Failed to fetch products:', error);
+      setAllProducts(fallbackProducts);
     }
   };
+
+  const displayedProducts = useMemo(() => {
+    if (selectedCategorySlug === 'all') {
+      return allProducts;
+    }
+
+    const selectedCategory = categories.find((category) => category.slug === selectedCategorySlug);
+    const selectedTokens = new Set(
+      [selectedCategorySlug, selectedCategory?.id, selectedCategory?.name]
+        .map((item) => normalizeCategoryToken(item))
+        .filter(Boolean)
+    );
+
+    return allProducts.filter((product) => {
+      const productTokens = [
+        product.category_id,
+        product.category_slug,
+        product.category_name,
+        product.category,
+        product.categories?.name,
+      ]
+        .map((item) => normalizeCategoryToken(item))
+        .filter(Boolean);
+
+      return productTokens.some((token) => selectedTokens.has(token));
+    });
+  }, [allProducts, categories, selectedCategorySlug]);
 
   const getImageSrc = (value) => {
     if (!value) return '/placeholder.svg';
@@ -114,41 +218,26 @@ const Store = () => {
   };
 
   return (
-    <div className="min-h-screen pt-16 relative">
+    <div className="min-h-screen pt-36 relative font-space-grotesk bg-white dark:bg-black">
       {isBlurred && (
         <div className="fixed inset-0 z-40 artio-blur-overlay flex items-center justify-center text-white text-lg font-semibold">
           Preview hidden while inactive
         </div>
       )}
       <div className={isBlurred ? 'artio-blur' : ''}>
-      <section className="py-12 bg-gradient-to-br from-gray-50 via-white to-gray-100 dark:from-gray-950 dark:via-black dark:to-gray-900">
+      <section className="py-8 bg-white/85 dark:bg-black/75 border-b border-gray-200/80 dark:border-gray-800/80 backdrop-blur-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="text-center"
-          >
-            <h1 className="text-5xl font-bold mb-4 text-gradient">Premium Collection</h1>
-            <p className="text-xl text-gray-600 dark:text-gray-400">
-              Discover museum-quality prints for your space
-            </p>
-          </motion.div>
-        </div>
-      </section>
-
-      <section className="py-8 bg-white dark:bg-black border-b border-gray-200 dark:border-gray-800">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center gap-2 mb-4">
-            <Filter className="w-5 h-5 text-gray-600 dark:text-gray-400" />
-            <span className="font-medium">Filter by Category</span>
+          <div className="flex items-center gap-2 mb-4 text-slate-700 dark:text-amber-100/90">
+            <Filter className="w-5 h-5" />
+            <span className="text-[11px] font-semibold tracking-[0.2em] uppercase">Filter by Category</span>
           </div>
           <div className="flex flex-wrap gap-2">
             <button
-              onClick={() => setSelectedCategoryId(null)}
-              className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                selectedCategoryId === null
-                  ? 'bg-black dark:bg-white text-white dark:text-black'
-                  : 'bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-gray-100 hover:bg-gray-200 dark:hover:bg-gray-700'
+              onClick={() => setSelectedCategorySlug('all')}
+              className={`px-4 py-2.5 rounded-full text-xs font-semibold tracking-[0.12em] uppercase transition-colors border ${
+                selectedCategorySlug === 'all'
+                  ? 'bg-slate-900 dark:bg-amber-300 text-white dark:text-black border-slate-900 dark:border-amber-300'
+                  : 'bg-slate-100/85 dark:bg-white/5 text-slate-700 dark:text-slate-200 border-slate-200 dark:border-white/10 hover:bg-slate-200 dark:hover:bg-white/10'
               }`}
             >
               All
@@ -156,20 +245,13 @@ const Store = () => {
             {categories.map((category) => (
               <button
                 key={category.id}
-                onClick={() => setSelectedCategoryId(category.id)}
-                className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                  selectedCategoryId === category.id
-                    ? 'bg-black dark:bg-white text-white dark:text-black'
-                    : 'bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-gray-100 hover:bg-gray-200 dark:hover:bg-gray-700'
+                onClick={() => setSelectedCategorySlug(category.slug || 'all')}
+                className={`flex items-center gap-2 px-4 py-2.5 rounded-full text-xs font-semibold tracking-[0.12em] uppercase transition-colors border ${
+                  selectedCategorySlug === category.slug
+                    ? 'bg-slate-900 dark:bg-amber-300 text-white dark:text-black border-slate-900 dark:border-amber-300'
+                    : 'bg-slate-100/85 dark:bg-white/5 text-slate-700 dark:text-slate-200 border-slate-200 dark:border-white/10 hover:bg-slate-200 dark:hover:bg-white/10'
                 }`}
               >
-                {category.image_path && (
-                  <img
-                    src={getImageSrc(category.image_path)}
-                    alt={category.name}
-                    className="w-6 h-6 object-cover rounded-full border border-gray-300 dark:border-gray-700"
-                  />
-                )}
                 {category.name}
               </button>
             ))}
@@ -179,9 +261,9 @@ const Store = () => {
 
       <section className="py-12 bg-white dark:bg-black">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          {products.length === 0 ? (
+          {displayedProducts.length === 0 ? (
             <div className="text-center py-24">
-              <p className="text-xl text-gray-600 dark:text-gray-400">
+              <p className="text-xl text-slate-600 dark:text-gray-400">
                 Products are currently unavailable in this category.
               </p>
             </div>
@@ -192,9 +274,9 @@ const Store = () => {
               animate="visible"
               className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"
             >
-              {products.map((product) => (
+              {displayedProducts.map((product) => (
                 <motion.div key={product.id} variants={itemVariants}>
-                  <Card className="group h-full flex flex-col">
+                  <Card className="group h-full flex flex-col rounded-2xl border border-slate-200 dark:border-white/10 bg-white/80 dark:bg-white/[0.02] shadow-[0_14px_30px_rgba(15,23,42,0.08)] dark:shadow-[0_14px_30px_rgba(0,0,0,0.25)] overflow-hidden">
                     <div className="relative aspect-[3/4] overflow-hidden artio-no-select">
                       <img
                         src={getImageSrc(product.image_path)}
@@ -211,29 +293,29 @@ const Store = () => {
                       <div className="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition-colors duration-300 flex items-center justify-center z-30">
                         <button
                           onClick={() => setQuickViewProduct(product)}
-                          className="opacity-0 group-hover:opacity-100 transition-opacity duration-300 bg-white dark:bg-black text-black dark:text-white px-4 py-2 rounded-lg font-medium flex items-center gap-2"
+                          className="opacity-0 group-hover:opacity-100 transition-opacity duration-300 bg-white/90 dark:bg-black/85 text-black dark:text-white px-4 py-2 rounded-full text-xs font-semibold tracking-[0.12em] uppercase flex items-center gap-2"
                         >
                           <Eye className="w-4 h-4" />
                           Quick View
                         </button>
                       </div>
                     </div>
-                    <div className="p-4 flex-1 flex flex-col">
-                      <h3 className="font-semibold mb-1">{product.name}</h3>
+                    <div className="p-5 flex-1 flex flex-col">
+                      <h3 className="font-semibold text-slate-900 dark:text-white mb-1.5">{product.name}</h3>
                       {product.categories && (
-                        <p className="text-xs text-gray-500 dark:text-gray-400 mb-2">
+                        <p className="text-[11px] tracking-[0.12em] uppercase text-slate-500 dark:text-gray-400 mb-2">
                           {product.categories.name}
                         </p>
                       )}
-                      <p className="text-sm text-gray-600 dark:text-gray-400 mb-3 line-clamp-2 flex-1">
+                      <p className="text-sm text-slate-600 dark:text-gray-400 mb-4 line-clamp-2 flex-1">
                         {product.description}
                       </p>
                       <div className="flex items-center justify-between">
-                        <span className="text-lg font-bold">${product.price}</span>
+                        <span className="text-xl font-semibold text-slate-900 dark:text-amber-200">${product.price}</span>
                         <Button
                           size="sm"
                           onClick={() => handleAddToCart(product)}
-                          className="flex items-center gap-2"
+                          className="flex items-center gap-2 rounded-full px-4"
                         >
                           <ShoppingCart className="w-4 h-4" />
                           Add

@@ -12,8 +12,8 @@ type DesktopNavSectionProps = {
 
 const DesktopNavSection = ({ navigation, isActive }: DesktopNavSectionProps) => {
   return (
-    <div className="hidden md:flex items-center justify-center flex-1">
-      <div className="flex items-center gap-2 px-3 py-2 rounded-full border border-black/10 dark:border-white/15 bg-white/85 dark:bg-black/35 backdrop-blur-xl shadow-[0_8px_24px_rgba(15,23,42,0.12)] dark:shadow-[0_8px_30px_rgba(0,0,0,0.35)]">
+    <div className="hidden md:flex items-center justify-center flex-1 min-w-0">
+      <div className="flex items-center gap-2 px-3 py-2 rounded-full border border-black/10 dark:border-white/15 bg-white/85 dark:bg-black/35 backdrop-blur-xl shadow-[0_8px_24px_rgba(15,23,42,0.12)] dark:shadow-[0_8px_30px_rgba(0,0,0,0.35)] max-w-full overflow-x-auto whitespace-nowrap [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
         {navigation.map((item) => (
           <Link
             key={item.name}

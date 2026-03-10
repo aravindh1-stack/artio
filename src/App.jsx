@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
 import Header from './components/header/Header';
 import Home from './pages/Home';
 import About from './pages/About';
@@ -15,6 +15,20 @@ import { useThemeStore } from './store/themeStore';
 import { useAuthStore } from './store/authStore';
 import AdminRoute from './components/AdminRoute';
 import Footer from './components/Footer';
+
+function ScrollToTop() {
+  const { pathname } = useLocation();
+
+  useEffect(() => {
+    if ('scrollRestoration' in window.history) {
+      window.history.scrollRestoration = 'manual';
+    }
+
+    window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
+  }, [pathname]);
+
+  return null;
+}
 
 function App() {
   const { setTheme } = useThemeStore();
@@ -56,6 +70,7 @@ function App() {
 
   return (
     <Router>
+      <ScrollToTop />
       <div className="min-h-screen bg-white dark:bg-black text-gray-900 dark:text-gray-100">
         <Header />
         <Routes>

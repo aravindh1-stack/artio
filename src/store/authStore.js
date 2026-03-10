@@ -1,4 +1,7 @@
 import { create } from 'zustand';
+import { onAuthStateChanged, signOut as firebaseSignOut } from 'firebase/auth';
+import { firebaseAuth, isFirebaseConfigured } from '../lib/firebase';
+import { getProfileByUser } from '../lib/firestoreDb';
 
 
 export const useAuthStore = create((set, get) => ({
@@ -7,11 +10,15 @@ export const useAuthStore = create((set, get) => ({
   loading: true,
   profile: null,
   role: 'user',
+  unsubscribeAuth: null,
 
   setUser: (user) => set({ user }),
   setSession: (session) => set({ session }),
   setLoading: (loading) => set({ loading }),
-  setProfile: (profile) => set({ profile, role: profile?.role ?? 'user' }),
+  setProfile: (profile) => {
+    const normalizedRole = String(profile?.role ?? 'user').trim().toLowerCase() || 'user';
+    set({ profile, role: normalizedRole });
+  },
 
   fetchProfile: async (user) => {
     if (!user) {
@@ -20,21 +27,12 @@ export const useAuthStore = create((set, get) => ({
     }
 
     try {
-      const params = new URLSearchParams();
-      if (user.id) {
-        params.set('userId', user.id);
-      }
-      if (user.email) {
-        params.set('email', user.email);
-      }
-
-      const response = await fetch(`/api/profile/get?${params.toString()}`);
-      if (!response.ok) {
+      const profile = await getProfileByUser({ userId: user.id, email: user.email });
+      if (!profile) {
         throw new Error('Profile fetch failed');
       }
-
-      const profile = await response.json();
-      set({ profile, role: profile?.role ?? 'user' });
+      const normalizedRole = String(profile?.role ?? 'user').trim().toLowerCase() || 'user';
+      set({ profile, role: normalizedRole });
     } catch {
       set({ profile: { id: user.id, email: user.email, full_name: '', phone: '', role: 'user' }, role: 'user' });
     }
@@ -42,16 +40,40 @@ export const useAuthStore = create((set, get) => ({
 
   initialize: async () => {
     set({ loading: true });
-    const storedUserRaw = localStorage.getItem('artio-auth-user');
-    const storedUser = storedUserRaw ? JSON.parse(storedUserRaw) : null;
-    set({ session: storedUser ? {} : null, user: storedUser });
-    await get().fetchProfile(storedUser);
-    set({ loading: false });
+
+    if (!isFirebaseConfigured || !firebaseAuth) {
+      set({ loading: false, user: null, session: null, profile: null, role: 'user' });
+      return;
+    }
+
+    const existingUnsubscribe = get().unsubscribeAuth;
+    if (typeof existingUnsubscribe === 'function') {
+      existingUnsubscribe();
+    }
+
+    const unsubscribe = onAuthStateChanged(firebaseAuth, async (firebaseUser) => {
+      if (!firebaseUser) {
+        set({ user: null, session: null, profile: null, role: 'user', loading: false });
+        return;
+      }
+
+      const nextUser = {
+        id: firebaseUser.uid,
+        email: firebaseUser.email,
+        fullName: firebaseUser.displayName || '',
+      };
+
+      set({ user: nextUser, session: { uid: firebaseUser.uid }, loading: false });
+      await get().fetchProfile(nextUser);
+    });
+
+    set({ unsubscribeAuth: unsubscribe, loading: false });
   },
 
   signOut: async () => {
-    // TODO: Replace with Neon/pg sign out logic
-    localStorage.removeItem('artio-auth-user');
+    if (firebaseAuth) {
+      await firebaseSignOut(firebaseAuth);
+    }
     set({ user: null, session: null, profile: null, role: 'user' });
   },
 }));

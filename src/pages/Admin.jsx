@@ -37,6 +37,72 @@ async function fileToDataUrl(file) {
   });
 }
 
+const MAX_IMAGE_DATA_URL_BYTES = 900000;
+
+const estimateDataUrlBytes = (dataUrl) => {
+  if (typeof dataUrl !== 'string' || !dataUrl.includes(',')) {
+    return 0;
+  }
+
+  const base64 = dataUrl.split(',')[1] || '';
+  return Math.ceil((base64.length * 3) / 4);
+};
+
+async function optimizeImageToDataUrl(
+  file,
+  { maxWidth = 1400, maxHeight = 1400, quality = 0.78, outputType = 'image/jpeg' } = {}
+) {
+  return new Promise((resolve, reject) => {
+    const img = new window.Image();
+
+    img.onload = () => {
+      const ratio = Math.min(maxWidth / img.width, maxHeight / img.height, 1);
+      const width = Math.max(1, Math.round(img.width * ratio));
+      const height = Math.max(1, Math.round(img.height * ratio));
+
+      const canvas = document.createElement('canvas');
+      canvas.width = width;
+      canvas.height = height;
+
+      const ctx = canvas.getContext('2d');
+      if (!ctx) {
+        reject(new Error('Unable to process image.'));
+        return;
+      }
+
+      ctx.drawImage(img, 0, 0, width, height);
+
+      canvas.toBlob(
+        async (blob) => {
+          if (!blob) {
+            reject(new Error('Image optimization failed.'));
+            return;
+          }
+
+          try {
+            const optimizedFile = new File([blob], file.name, { type: outputType });
+            const dataUrl = await fileToDataUrl(optimizedFile);
+
+            if (estimateDataUrlBytes(dataUrl) > MAX_IMAGE_DATA_URL_BYTES) {
+              reject(new Error('Image is still too large. Please use a smaller image (under ~1MB).'));
+              return;
+            }
+
+            resolve(dataUrl);
+          } catch (error) {
+            reject(error);
+          }
+        },
+        outputType,
+        quality
+      );
+    };
+
+    img.onerror = () => reject(new Error('Invalid image file.'));
+    img.src = URL.createObjectURL(file);
+  });
+}
+
 const isDataUrlImage = (value) => typeof value === 'string' && value.startsWith('data:image/');
 const isProbablyRawBase64 = (value) =>
   typeof value === 'string' && value.length > 120 && !value.includes(' ') && /^[A-Za-z0-9+/=]+$/.test(value);
@@ -63,6 +129,19 @@ import Button from '../components/ui/Button';
 import Input from '../components/ui/Input';
 import DragDropImage from '../components/ui/DragDropImage';
 import Modal from '../components/ui/Modal';
+import {
+  deleteCategoryAdmin,
+  deleteProductAdmin,
+  getCategoriesAdmin,
+  getOrders,
+  getProductsAdmin,
+  getUserAddressesAdmin,
+  getUsersAdmin,
+  saveCategoryAdmin,
+  saveProductAdmin,
+  updateOrderAdmin,
+  updateUserRoleAdmin,
+} from '../lib/firestoreDb';
 
 const slugify = (value) => {
   if (!value) return '';
@@ -94,7 +173,6 @@ const emptyCategory = {
   name: '',
   slug: '',
   description: '',
-  image_path: '',
   display_order: 0,
 };
 
@@ -109,7 +187,6 @@ const Admin = () => {
   const [orders, setOrders] = useState([]);
   const [selectedOrder, setSelectedOrder] = useState(null);
 
-              // TODO: Replace with Neon upload logic
   const [selectedUser, setSelectedUser] = useState(null);
   const [userAddresses, setUserAddresses] = useState([]);
   const [users, setUsers] = useState([]);
@@ -130,38 +207,22 @@ const Admin = () => {
   ];
 
   const loadOrders = async () => {
-    const response = await fetch('/api/admin/orders');
-    const data = await response.json();
-    if (!response.ok) {
-      throw new Error(data.error || 'Unable to load orders');
-    }
+    const data = await getOrders();
     setOrders(Array.isArray(data) ? data : []);
   };
 
   const loadUsers = async () => {
-    const response = await fetch('/api/admin/users');
-    const data = await response.json();
-    if (!response.ok) {
-      throw new Error(data.error || 'Unable to load users');
-    }
+    const data = await getUsersAdmin();
     setUsers(Array.isArray(data) ? data : []);
   };
 
   const loadProducts = async () => {
-    const response = await fetch('/api/admin/products');
-    const data = await response.json();
-    if (!response.ok) {
-      throw new Error(data.error || 'Unable to load products');
-    }
+    const data = await getProductsAdmin();
     setProducts(Array.isArray(data) ? data : []);
   };
 
   const loadCategories = async () => {
-    const response = await fetch('/api/admin/categories');
-    const data = await response.json();
-    if (!response.ok) {
-      throw new Error(data.error || 'Unable to load categories');
-    }
+    const data = await getCategoriesAdmin();
     setCategories(Array.isArray(data) ? data : []);
   };
 
@@ -208,15 +269,7 @@ const Admin = () => {
   const saveProduct = async () => {
     setUploading(true);
     try {
-      const response = await fetch('/api/admin/products', {
-        method: productForm.id ? 'PUT' : 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(productForm),
-      });
-      const data = await response.json();
-      if (!response.ok) {
-        throw new Error(data.error || 'Failed to save product.');
-      }
+      await saveProductAdmin(productForm);
       setProductModalOpen(false);
       await loadProducts();
     } catch (err) {
@@ -229,13 +282,7 @@ const Admin = () => {
   const deleteProduct = async (productId) => {
     if (!window.confirm('Delete this product?')) return;
     try {
-      const response = await fetch(`/api/admin/products?id=${encodeURIComponent(productId)}`, {
-        method: 'DELETE',
-      });
-      const data = await response.json();
-      if (!response.ok) {
-        throw new Error(data.error || 'Failed to delete product.');
-      }
+      await deleteProductAdmin(productId);
       await loadProducts();
     } catch (err) {
       setError(err.message || 'Failed to delete product.');
@@ -249,7 +296,6 @@ const Admin = () => {
         name: category.name,
         slug: category.slug,
         description: category.description ?? '',
-        image_path: category.image_path ?? '',
         display_order: category.display_order ?? 0,
       });
     } else {
@@ -260,15 +306,7 @@ const Admin = () => {
 
   const saveCategory = async () => {
     try {
-      const response = await fetch('/api/admin/categories', {
-        method: categoryForm.id ? 'PUT' : 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(categoryForm),
-      });
-      const data = await response.json();
-      if (!response.ok) {
-        throw new Error(data.error || 'Failed to save category.');
-      }
+      await saveCategoryAdmin(categoryForm);
       setCategoryModalOpen(false);
       await loadCategories();
     } catch (err) {
@@ -279,13 +317,7 @@ const Admin = () => {
   const deleteCategory = async (categoryId) => {
     if (!window.confirm('Delete this category?')) return;
     try {
-      const response = await fetch(`/api/admin/categories?id=${encodeURIComponent(categoryId)}`, {
-        method: 'DELETE',
-      });
-      const data = await response.json();
-      if (!response.ok) {
-        throw new Error(data.error || 'Failed to delete category.');
-      }
+      await deleteCategoryAdmin(categoryId);
       await loadCategories();
     } catch (err) {
       setError(err.message || 'Failed to delete category.');
@@ -294,11 +326,7 @@ const Admin = () => {
 
   const loadUserAddresses = async (userId) => {
     try {
-      const response = await fetch(`/api/admin/user-addresses?userId=${encodeURIComponent(userId)}`);
-      const data = await response.json();
-      if (!response.ok) {
-        throw new Error(data.error || 'Failed to load addresses.');
-      }
+      const data = await getUserAddressesAdmin(userId);
       setUserAddresses(Array.isArray(data) ? data : []);
     } catch (err) {
       setError(err.message || 'Failed to load addresses.');
@@ -313,15 +341,7 @@ const Admin = () => {
 
   const updateUserRole = async (userId, nextRole) => {
     try {
-      const response = await fetch('/api/admin/users', {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId, role: nextRole }),
-      });
-      const data = await response.json();
-      if (!response.ok) {
-        throw new Error(data.error || 'Failed to update user role.');
-      }
+      await updateUserRoleAdmin(userId, nextRole);
       await loadUsers();
     } catch (err) {
       setError(err.message || 'Failed to update user role.');
@@ -330,15 +350,7 @@ const Admin = () => {
 
   const updateOrder = async (orderId, payload) => {
     try {
-      const response = await fetch('/api/admin/orders', {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ orderId, ...payload }),
-      });
-      const data = await response.json();
-      if (!response.ok) {
-        throw new Error(data.error || 'Failed to update order.');
-      }
+      await updateOrderAdmin(orderId, payload);
       await loadOrders();
     } catch (err) {
       setError(err.message || 'Failed to update order.');
@@ -346,23 +358,24 @@ const Admin = () => {
   };
 
   return (
-    <div className="min-h-screen pt-20 pb-12 bg-gray-50 dark:bg-gray-950">
+    <div className="min-h-screen pt-36 lg:pt-40 pb-16 font-space-grotesk bg-gradient-to-br from-slate-50 via-white to-slate-100 dark:from-[#03050a] dark:via-[#02040a] dark:to-[#050910]">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between mb-8">
+        <div className="flex items-center justify-between mb-8 rounded-2xl border border-slate-200/80 dark:border-white/10 bg-white/75 dark:bg-white/[0.03] backdrop-blur-xl px-5 py-4">
           <div>
-            <h1 className="text-4xl font-bold">Admin Dashboard</h1>
-            <p className="text-gray-600 dark:text-gray-400">
+            <p className="text-[11px] tracking-[0.24em] uppercase text-slate-500 dark:text-slate-300">Artio Control Center</p>
+            <h1 className="mt-2 text-4xl font-semibold tracking-tight text-slate-900 dark:text-white">Admin Dashboard</h1>
+            <p className="text-slate-600 dark:text-slate-300 mt-1">
               Manage orders, products, and users.
             </p>
           </div>
-          <Button variant="outline" onClick={refreshAll}>
+          <Button variant="outline" className="rounded-full px-5" onClick={refreshAll}>
             Refresh
           </Button>
         </div>
 
         {error && (
-          <div className="mb-6 p-4 rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800">
-            <p className="text-sm text-red-600 dark:text-red-400">{error}</p>
+          <div className="mb-6 p-4 rounded-xl bg-rose-50/95 dark:bg-rose-900/20 border border-rose-200 dark:border-rose-700/40">
+            <p className="text-sm text-rose-600 dark:text-rose-300">{error}</p>
           </div>
         )}
 
@@ -371,10 +384,10 @@ const Admin = () => {
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
-              className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+              className={`px-4 py-2.5 rounded-full text-xs font-semibold tracking-[0.12em] uppercase transition-colors border ${
                 activeTab === tab.id
-                  ? 'bg-black dark:bg-white text-white dark:text-black'
-                  : 'bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 text-gray-600 dark:text-gray-400'
+                  ? 'bg-slate-900 dark:bg-amber-300 text-white dark:text-black border-slate-900 dark:border-amber-300'
+                  : 'bg-white/90 dark:bg-white/[0.03] border-slate-200 dark:border-white/15 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-white/[0.06]'
               }`}
             >
               {tab.label}
@@ -383,33 +396,33 @@ const Admin = () => {
         </div>
 
         {loading ? (
-          <Card className="p-8">
-            <p className="text-gray-600 dark:text-gray-400">Loading data...</p>
+          <Card className="p-8 rounded-2xl border border-slate-200 dark:border-white/10 bg-white/80 dark:bg-white/[0.03]">
+            <p className="text-slate-600 dark:text-slate-300">Loading data...</p>
           </Card>
         ) : (
           <>
             {activeTab === 'orders' && (
-              <Card className="p-6">
-                <h2 className="text-2xl font-bold mb-4">Orders</h2>
+              <Card className="p-6 rounded-2xl border border-slate-200 dark:border-white/10 bg-white/80 dark:bg-white/[0.03]">
+                <h2 className="text-2xl font-semibold mb-4 text-slate-900 dark:text-white">Orders</h2>
                 <div className="space-y-4">
                   {orders.length === 0 ? (
-                    <p className="text-gray-600 dark:text-gray-400">No orders yet.</p>
+                    <p className="text-slate-600 dark:text-slate-300">No orders yet.</p>
                   ) : (
                     orders.map((order) => (
-                      <div key={order.id} className="p-4 rounded-lg border border-gray-200 dark:border-gray-800">
+                      <div key={order.id} className="p-4 rounded-xl border border-slate-200 dark:border-white/10 bg-white/85 dark:bg-white/[0.02]">
                         <div className="flex flex-wrap items-center justify-between gap-4">
                           <div>
-                            <p className="font-semibold">Order {order.id}</p>
-                            <p className="text-sm text-gray-600 dark:text-gray-400">
+                            <p className="font-semibold text-slate-900 dark:text-white">Order {order.id}</p>
+                            <p className="text-sm text-slate-600 dark:text-slate-300">
                               User: {order.user_id}
                             </p>
-                            <p className="text-sm text-gray-600 dark:text-gray-400">
+                            <p className="text-sm text-slate-600 dark:text-slate-300">
                               Total: ${Number(order.total_amount).toFixed(2)}
                             </p>
                           </div>
                           <div className="flex items-center gap-3">
                             <select
-                              className="border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 rounded-lg px-3 py-2 text-sm"
+                              className="border border-slate-200 dark:border-white/15 bg-white dark:bg-black/50 rounded-lg px-3 py-2 text-sm text-slate-700 dark:text-slate-200"
                               value={order.status}
                               onChange={(e) => updateOrder(order.id, { status: e.target.value })}
                             >
@@ -419,7 +432,7 @@ const Admin = () => {
                               <option value="cancelled">cancelled</option>
                             </select>
                             <select
-                              className="border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 rounded-lg px-3 py-2 text-sm"
+                              className="border border-slate-200 dark:border-white/15 bg-white dark:bg-black/50 rounded-lg px-3 py-2 text-sm text-slate-700 dark:text-slate-200"
                               value={order.payment_status || 'unpaid'}
                               onChange={(e) => updateOrder(order.id, { payment_status: e.target.value })}
                             >
@@ -441,26 +454,26 @@ const Admin = () => {
 
             {activeTab === 'products' && (
               <div className="space-y-6">
-                <Card className="p-6">
+                <Card className="p-6 rounded-2xl border border-slate-200 dark:border-white/10 bg-white/80 dark:bg-white/[0.03]">
                   <div className="flex items-center justify-between mb-4">
-                    <h2 className="text-2xl font-bold">Products</h2>
-                    <Button size="sm" onClick={() => openProductModal(null)}>
+                    <h2 className="text-2xl font-semibold text-slate-900 dark:text-white">Products</h2>
+                    <Button size="sm" className="rounded-full" onClick={() => openProductModal(null)}>
                       Add Product
                     </Button>
                   </div>
                   <div className="space-y-4">
                     {products.length === 0 ? (
-                      <p className="text-gray-600 dark:text-gray-400">No products yet.</p>
+                      <p className="text-slate-600 dark:text-slate-300">No products yet.</p>
                     ) : (
                       products.map((product) => (
-                        <div key={product.id} className="p-4 rounded-lg border border-gray-200 dark:border-gray-800">
+                        <div key={product.id} className="p-4 rounded-xl border border-slate-200 dark:border-white/10 bg-white/85 dark:bg-white/[0.02]">
                           <div className="flex flex-wrap items-center justify-between gap-4">
                             <div>
-                              <p className="font-semibold">{product.name}</p>
-                              <p className="text-sm text-gray-600 dark:text-gray-400">
+                              <p className="font-semibold text-slate-900 dark:text-white">{product.name}</p>
+                              <p className="text-sm text-slate-600 dark:text-slate-300">
                                 {product.categories?.name || 'Uncategorized'} · ${Number(product.price).toFixed(2)}
                               </p>
-                              <p className="text-xs text-gray-500 dark:text-gray-400">
+                              <p className="text-xs text-slate-500 dark:text-slate-400">
                                 {product.is_active ? 'Active' : 'Inactive'} · Stock {product.stock_quantity}
                               </p>
                             </div>
@@ -483,23 +496,23 @@ const Admin = () => {
                   </div>
                 </Card>
 
-                <Card className="p-6">
+                <Card className="p-6 rounded-2xl border border-slate-200 dark:border-white/10 bg-white/80 dark:bg-white/[0.03]">
                   <div className="flex items-center justify-between mb-4">
-                    <h2 className="text-2xl font-bold">Categories</h2>
-                    <Button size="sm" onClick={() => openCategoryModal(null)}>
+                    <h2 className="text-2xl font-semibold text-slate-900 dark:text-white">Categories</h2>
+                    <Button size="sm" className="rounded-full" onClick={() => openCategoryModal(null)}>
                       Add Category
                     </Button>
                   </div>
                   <div className="space-y-4">
                     {categories.length === 0 ? (
-                      <p className="text-gray-600 dark:text-gray-400">No categories yet.</p>
+                      <p className="text-slate-600 dark:text-slate-300">No categories yet.</p>
                     ) : (
                       categories.map((category) => (
-                        <div key={category.id} className="p-4 rounded-lg border border-gray-200 dark:border-gray-800">
+                        <div key={category.id} className="p-4 rounded-xl border border-slate-200 dark:border-white/10 bg-white/85 dark:bg-white/[0.02]">
                           <div className="flex flex-wrap items-center justify-between gap-4">
                             <div>
-                              <p className="font-semibold">{category.name}</p>
-                              <p className="text-sm text-gray-600 dark:text-gray-400">Slug: {category.slug}</p>
+                              <p className="font-semibold text-slate-900 dark:text-white">{category.name}</p>
+                              <p className="text-sm text-slate-600 dark:text-slate-300">Slug: {category.slug}</p>
                             </div>
                             <div className="flex items-center gap-2">
                               <Button variant="outline" size="sm" onClick={() => openCategoryModal(category)}>
@@ -523,23 +536,23 @@ const Admin = () => {
             )}
 
             {activeTab === 'users' && (
-              <Card className="p-6">
-                <h2 className="text-2xl font-bold mb-4">Users</h2>
+              <Card className="p-6 rounded-2xl border border-slate-200 dark:border-white/10 bg-white/80 dark:bg-white/[0.03]">
+                <h2 className="text-2xl font-semibold mb-4 text-slate-900 dark:text-white">Users</h2>
                 <div className="space-y-4">
                   {users.length === 0 ? (
-                    <p className="text-gray-600 dark:text-gray-400">No users yet.</p>
+                    <p className="text-slate-600 dark:text-slate-300">No users yet.</p>
                   ) : (
                     users.map((user) => (
-                      <div key={user.id} className="p-4 rounded-lg border border-gray-200 dark:border-gray-800">
+                      <div key={user.id} className="p-4 rounded-xl border border-slate-200 dark:border-white/10 bg-white/85 dark:bg-white/[0.02]">
                         <div className="flex flex-wrap items-center justify-between gap-4">
                           <div>
-                            <p className="font-semibold">{user.full_name || 'No name'}</p>
-                            <p className="text-sm text-gray-600 dark:text-gray-400">{user.email}</p>
-                            <p className="text-sm text-gray-600 dark:text-gray-400">{user.phone || 'No phone'}</p>
+                            <p className="font-semibold text-slate-900 dark:text-white">{user.full_name || 'No name'}</p>
+                            <p className="text-sm text-slate-600 dark:text-slate-300">{user.email}</p>
+                            <p className="text-sm text-slate-600 dark:text-slate-300">{user.phone || 'No phone'}</p>
                           </div>
                           <div className="flex items-center gap-2">
                             <select
-                              className="border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 rounded-lg px-3 py-2 text-sm"
+                              className="border border-slate-200 dark:border-white/15 bg-white dark:bg-black/50 rounded-lg px-3 py-2 text-sm text-slate-700 dark:text-slate-200"
                               value={user.role || 'user'}
                               onChange={(e) => updateUserRole(user.id, e.target.value)}
                             >
@@ -627,12 +640,17 @@ const Admin = () => {
                 const file = e.target.files[0];
                 if (!file) return;
                 setUploading(true);
+                setError('');
                 try {
-                  const dataUrl = await fileToDataUrl(file);
+                  const dataUrl = await optimizeImageToDataUrl(file, {
+                    maxWidth: 1600,
+                    maxHeight: 1600,
+                    quality: 0.78,
+                  });
                   setProductImageFiles([file]);
                   setProductForm((prev) => ({ ...prev, image_path: dataUrl }));
-                } catch {
-                  alert('Failed to process image file.');
+                } catch (err) {
+                  setError(err?.message || 'Failed to process image file.');
                 } finally {
                   setUploading(false);
                 }
@@ -729,43 +747,6 @@ const Admin = () => {
             value={categoryForm.slug}
             onChange={(e) => setCategoryForm((prev) => ({ ...prev, slug: e.target.value }))}
           />
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Category Image</label>
-            <input
-              type="file"
-              accept="image/*"
-              className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-primary/10 file:text-primary hover:file:bg-primary/20"
-              onChange={async (e) => {
-                const file = e.target.files[0];
-                if (!file) return;
-                setUploading(true);
-                try {
-                  const dataUrl = await fileToDataUrl(file);
-                  setCategoryForm((prev) => ({ ...prev, image_path: dataUrl }));
-                } catch {
-                  alert('Failed to process image file.');
-                } finally {
-                  setUploading(false);
-                }
-              }}
-            />
-            {categoryForm.image_path && (
-              <div className="mt-2 flex items-center gap-2">
-                {toRenderableImageSrc(categoryForm.image_path) ? (
-                  <>
-                    <img
-                      src={toRenderableImageSrc(categoryForm.image_path)}
-                      alt="Category preview"
-                      className="w-10 h-10 rounded border border-gray-200 dark:border-gray-700 object-cover"
-                    />
-                    <span className="text-xs text-gray-500">Image ready to save</span>
-                  </>
-                ) : (
-                  <span className="text-xs text-gray-500">Image value attached</span>
-                )}
-              </div>
-            )}
-          </div>
           <Input
             label="Display Order"
             type="number"
@@ -786,7 +767,7 @@ const Admin = () => {
           </div>
         </div>
         <div className="mt-6 flex items-center gap-3">
-          <Button onClick={saveCategory} disabled={!categoryForm.image_path || uploading}>
+          <Button onClick={saveCategory} disabled={!categoryForm.name.trim() || uploading}>
             {uploading ? 'Uploading...' : 'Save Category'}
           </Button>
           <Button variant="outline" onClick={() => setCategoryModalOpen(false)}>
@@ -828,7 +809,7 @@ const Admin = () => {
                   <div key={item.id} className="flex items-center gap-3 text-sm text-gray-600 dark:text-gray-400">
                     {item.products?.image_path && (
                       <img
-                        src={`/gallery/${item.products.image_path}`}
+                        src={toRenderableImageSrc(item.products.image_path)}
                         alt={item.products?.name || 'Product'}
                         className="w-12 h-12 object-cover rounded border"
                         style={{ aspectRatio: '1/1' }}
